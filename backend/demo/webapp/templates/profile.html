@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Account Settings & Profile</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; padding: 40px; }
+        .container { max-width: 650px; margin: 0 auto; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        h2 { color: #202124; margin-top: 0; border-bottom: 2px solid #e8eaed; padding-bottom: 12px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; color: #4a5568; }
+        input { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        .badge { display: inline-block; background: #e2e8f0; color: #4a5568; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
+        button { background: #2b6cb0; color: white; padding: 12px 24px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        button:hover { background: #2c5282; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Personal Information & Profile</h2>
+        <span class="badge">Protected Customer Portal</span>
+
+        <form id="profile-form" onsubmit="event.preventDefault(); alert('Profile Saved Successfully!');">
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" value="Rahul Mehta">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" value="rahul@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" value="+91 9876543210">
+            </div>
+
+            <div class="form-group">
+                <label for="address">Residential Address</label>
+                <input type="text" id="address" name="address" value="42 Park Avenue, Connaught Place, New Delhi">
+            </div>
+
+            <div class="form-group">
+                <label for="account_number">Bank Account Number</label>
+                <input type="text" id="account_number" name="account_number" value="45892310452">
+            </div>
+
+            <div class="form-group">
+                <label for="pin">Security PIN</label>
+                <input type="password" id="pin" name="pin" value="1234">
+            </div>
+
+            <button type="submit" id="save_btn">Save Changes</button>
+        </form>
+    </div>
+</body>
+</html>

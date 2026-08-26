@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Banking Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 40px; }
+        .dashboard { max-width: 700px; margin: 0 auto; }
+        .card { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #334155; padding: 24px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .card-header { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 8px; }
+        .card-value { font-size: 24px; font-weight: bold; color: #38bdf8; letter-spacing: 2px; }
+        .form-card { background: #1e293b; padding: 24px; border-radius: 16px; border: 1px solid #334155; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; color: #cbd5e1; font-weight: 500; }
+        input { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <h2>Primary Account Card</h2>
+        
+        <!-- Rendered visual text card to test OCR/Visual Perception -->
+        <div class="card" id="visual-account-card">
+            <div class="card-header">Primary Linked Account</div>
+            <div class="card-value" id="card-account-text">Account Number: 45892310452</div>
+        </div>
+
+        <div class="form-card">
+            <h3>Fast Transfer</h3>
+            <form id="transfer-form">
+                <div class="form-group">
+                    <label for="recipient_account">Recipient Account Number</label>
+                    <input type="text" id="recipient_account" name="recipient_account" placeholder="9876543210">
+                </div>
+                <div class="form-group">
+                    <label for="transfer_amount">Amount ($)</label>
+                    <input type="number" id="transfer_amount" name="transfer_amount" value="500">
+                </div>
+                <button type="button" id="confirm_transfer_btn">Confirm Transfer</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
