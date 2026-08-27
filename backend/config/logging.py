@@ -31,6 +31,16 @@ def setup_logging():
     error_handler.setFormatter(formatter)
     root_logger.addHandler(error_handler)
 
+    # File handler for perception UI (captures all logs for the dashboard)
+    import os
+    os.makedirs("logs", exist_ok=True)
+    perception_handler = logging.FileHandler("logs/perception.log", mode="a") # Use append mode because multiple processes write to it
+    perception_handler.setLevel(log_level)
+    # Simple formatter for the dashboard (just the message or simple time + message)
+    perception_formatter = logging.Formatter(fmt="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
+    perception_handler.setFormatter(perception_formatter)
+    root_logger.addHandler(perception_handler)
+
     return root_logger
 
 def get_logger(name: str) -> logging.Logger:

@@ -42,6 +42,7 @@ action_executor: ActionExecutor = None
 current_sanitized_state: SanitizedPageState = None
 latest_dashboard_state: DashboardState = None
 startup_time: float = None
+browser_lock: asyncio.Lock = asyncio.Lock()
 
 @app.on_event("startup")
 async def startup_event():
@@ -111,39 +112,40 @@ async def get_context(task: str):
     try:
         logger.info(f"Capturing context for task: {task}")
 
-        # Capture raw state
-        raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
-        logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
+        async with browser_lock:
+            # Capture raw state
+            raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
+            logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
 
-        # Sanitize
-        t0 = time.time()
-        sanitized_state = sanitizer.sanitize(raw_state)
-        metrics['sanitization_ms'] = (time.time() - t0) * 1000
-        metrics['total_ms'] = sum(metrics.values())
-        
-        current_sanitized_state = sanitized_state
+            # Sanitize
+            t0 = time.time()
+            sanitized_state = sanitizer.sanitize(raw_state)
+            metrics['sanitization_ms'] = (time.time() - t0) * 1000
+            metrics['total_ms'] = sum(metrics.values())
+            
+            current_sanitized_state = sanitized_state
 
-        global latest_dashboard_state
-        screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
-        latest_dashboard_state = DashboardState(
-            url=raw_state.url,
-            title=raw_state.title,
-            screenshot_url=screenshot_url,
-            raw_elements=raw_state.dom_elements,
-            sanitized_elements=sanitized_state.elements,
-            ocr_results=ocr_findings,
-            vision_results=vision_boxes,
-            metrics=ProcessingMetrics(**metrics),
-            viewport=raw_state.viewport,
-            timestamp=raw_state.timestamp
-        )
+            global latest_dashboard_state
+            screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
+            latest_dashboard_state = DashboardState(
+                url=raw_state.url,
+                title=raw_state.title,
+                screenshot_url=screenshot_url,
+                raw_elements=raw_state.dom_elements,
+                sanitized_elements=sanitized_state.elements,
+                ocr_results=ocr_findings,
+                vision_results=vision_boxes,
+                metrics=ProcessingMetrics(**metrics),
+                viewport=raw_state.viewport,
+                timestamp=raw_state.timestamp
+            )
 
-        logger.info(f"Context captured successfully - URL: {sanitized_state.url}")
+            logger.info(f"Context captured successfully - URL: {sanitized_state.url}")
 
-        return AgentContext(
-            task=task,
-            page=sanitized_state
-        )
+            return AgentContext(
+                task=task,
+                page=sanitized_state
+            )
     except Exception as e:
         logger.error(f"Failed to capture context: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to capture context: {str(e)}")
@@ -163,53 +165,54 @@ async def perform_action(action: AgentAction):
         raise HTTPException(status_code=400, detail="No active context. Request context first or navigate.")
 
     try:
-        # Validate action
-        if action.action != "navigate":
-            try:
-                action_validator.validate(action, current_sanitized_state)
-                logger.debug("Action validation passed")
-            except ValueError as validation_error:
-                logger.warning(f"Action validation failed: {validation_error}")
-                return ActionResult(success=False, error=str(validation_error))
+        async with browser_lock:
+            # Validate action
+            if action.action != "navigate":
+                try:
+                    action_validator.validate(action, current_sanitized_state)
+                    logger.debug("Action validation passed")
+                except ValueError as validation_error:
+                    logger.warning(f"Action validation failed: {validation_error}")
+                    return ActionResult(success=False, error=str(validation_error))
 
-        # Execute action
-        await action_executor.execute(action)
-        logger.info(f"Action {action.action} executed successfully")
+            # Execute action
+            await action_executor.execute(action)
+            logger.info(f"Action {action.action} executed successfully")
 
-        # Wait for page to stabilize
-        await asyncio.sleep(1.0)
+            # Wait for page to stabilize
+            await asyncio.sleep(1.0)
 
-        # Capture new state
-        raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
-        
-        t0 = time.time()
-        sanitized_state = sanitizer.sanitize(raw_state)
-        metrics['sanitization_ms'] = (time.time() - t0) * 1000
-        metrics['total_ms'] = sum(metrics.values())
-        
-        current_sanitized_state = sanitized_state
-        
-        global latest_dashboard_state
-        screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
-        latest_dashboard_state = DashboardState(
-            url=raw_state.url,
-            title=raw_state.title,
-            screenshot_url=screenshot_url,
-            raw_elements=raw_state.dom_elements,
-            sanitized_elements=sanitized_state.elements,
-            ocr_results=ocr_findings,
-            vision_results=vision_boxes,
-            metrics=ProcessingMetrics(**metrics),
-            viewport=raw_state.viewport,
-            timestamp=raw_state.timestamp
-        )
+            # Capture new state
+            raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
+            
+            t0 = time.time()
+            sanitized_state = sanitizer.sanitize(raw_state)
+            metrics['sanitization_ms'] = (time.time() - t0) * 1000
+            metrics['total_ms'] = sum(metrics.values())
+            
+            current_sanitized_state = sanitized_state
+            
+            global latest_dashboard_state
+            screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
+            latest_dashboard_state = DashboardState(
+                url=raw_state.url,
+                title=raw_state.title,
+                screenshot_url=screenshot_url,
+                raw_elements=raw_state.dom_elements,
+                sanitized_elements=sanitized_state.elements,
+                ocr_results=ocr_findings,
+                vision_results=vision_boxes,
+                metrics=ProcessingMetrics(**metrics),
+                viewport=raw_state.viewport,
+                timestamp=raw_state.timestamp
+            )
 
-        logger.info("New state captured after action execution")
+            logger.info("New state captured after action execution")
 
-        return ActionResult(
-            success=True,
-            new_state=sanitized_state
-        )
+            return ActionResult(
+                success=True,
+                new_state=sanitized_state
+            )
 
     except ValueError as e:
         logger.error(f"Value error during action execution: {e}")
@@ -224,3 +227,20 @@ async def get_dashboard_state():
     if not latest_dashboard_state:
         raise HTTPException(status_code=404, detail="No capture state available yet")
     return latest_dashboard_state
+
+@app.get("/dashboard/logs")
+async def get_dashboard_logs(limit: int = 500):
+    """Endpoint for the UI to stream terminal logs."""
+    log_file = "logs/perception.log"
+    if not os.path.exists(log_file):
+        return {"logs": []}
+        
+    try:
+        with open(log_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            
+        # Return only the last `limit` lines to keep it light
+        return {"logs": lines[-limit:]}
+    except Exception as e:
+        logger.error(f"Error reading logs: {e}")
+        return {"logs": [f"Error reading logs: {str(e)}"]}
