@@ -64,3 +64,23 @@ class ActionResult(BaseModel):
     success: bool
     error: Optional[str] = None
     new_state: Optional[SanitizedPageState] = None
+
+class ProcessingMetrics(BaseModel):
+    capture_ms: float = 0
+    dom_ms: float = 0
+    ocr_ms: float = 0
+    vision_ms: float = 0
+    sanitization_ms: float = 0
+    total_ms: float = 0
+
+class DashboardState(BaseModel):
+    url: str
+    title: str
+    screenshot_url: Optional[str] = None
+    raw_elements: List[DOMElement] = Field(default_factory=list)
+    sanitized_elements: List[SanitizedElement] = Field(default_factory=list)
+    ocr_results: List[VisualElement] = Field(default_factory=list)
+    vision_results: List[VisualElement] = Field(default_factory=list)
+    metrics: ProcessingMetrics = Field(default_factory=ProcessingMetrics)
+    viewport: Dict[str, int]
+    timestamp: float

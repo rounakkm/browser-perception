@@ -14,7 +14,7 @@ class CaptureService:
         self.browser = browser
         self.perception = PerceptionEngine()
 
-    async def capture_state(self) -> PageState:
+    async def capture_state(self):
         """Capture the current page state including screenshot and DOM."""
         url = await self.browser.get_url()
         title = await self.browser.get_title()
@@ -22,6 +22,7 @@ class CaptureService:
 
         # Capture screenshot
         screenshot_path = None
+        capture_t0 = time.time()
         try:
             settings.ensure_directories()
             timestamp = int(time.time() * 1000)
@@ -33,6 +34,7 @@ class CaptureService:
         except Exception as e:
             logger.warning(f"Failed to capture screenshot: {e}")
             screenshot_path = None
+        capture_ms = (time.time() - capture_t0) * 1000
 
         # Extract DOM elements
         try:
@@ -43,13 +45,18 @@ class CaptureService:
             raw_dom_elements = []
 
         # Perceive elements (integrate OCR, vision, etc.)
+        ocr_findings = []
+        vision_boxes = []
+        metrics = {'capture_ms': capture_ms}
+        
         try:
-            perceived_elements = self.perception.perceive(raw_dom_elements, screenshot_path)
+            perceived_elements, ocr_findings, vision_boxes, perc_metrics = self.perception.perceive(raw_dom_elements, screenshot_path)
+            metrics.update(perc_metrics)
         except Exception as e:
             logger.warning(f"Perception pipeline encountered an issue: {e}")
             perceived_elements = raw_dom_elements
 
-        return PageState(
+        page_state = PageState(
             url=url,
             title=title,
             screenshot_path=screenshot_path,
@@ -57,3 +64,4 @@ class CaptureService:
             viewport=viewport,
             timestamp=time.time()
         )
+        return page_state, ocr_findings, vision_boxes, metrics
