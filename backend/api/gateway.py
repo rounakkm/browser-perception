@@ -1,11 +1,16 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from backend.models.domain import AgentContext, AgentAction, ActionResult, SanitizedPageState
+from backend.models.domain import (AgentContext, AgentAction, ActionResult, SanitizedPageState,
+                                   BrowserPerceptionRequest, BrowserActionResult)
 from backend.browser.connector import BrowserConnector
 from backend.capture.service import CaptureService
 from backend.sanitization.engine import SanitizationEngine
 from backend.actions.validator import ActionValidator
 from backend.actions.executor import ActionExecutor
+from backend.browser.extension_bridge import ExtensionBridge
+from backend.security.store import value_store
+from backend.security.origin_policy import origin_decision
 from backend.config.settings import settings
 from backend.config.logging import setup_logging, get_logger
 import asyncio
@@ -21,6 +26,10 @@ app = FastAPI(
     description="On-device Visual Perception for Browser Agents",
     version="1.0.0"
 )
+# The server is intentionally localhost-only. This permits a locally loaded
+# extension to call it while keeping all raw browser data on the device.
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
+                   allow_headers=["*"], allow_credentials=False)
 
 # Global state
 browser: BrowserConnector = None
@@ -29,6 +38,7 @@ sanitizer: SanitizationEngine = None
 action_validator: ActionValidator = None
 action_executor: ActionExecutor = None
 current_sanitized_state: SanitizedPageState = None
+extension_bridge = ExtensionBridge()
 startup_time: float = None
 
 @app.on_event("startup")
@@ -89,7 +99,7 @@ async def get_config() -> Dict[str, Any]:
     }
 
 @app.post("/agent/context", response_model=AgentContext)
-async def get_context(task: str):
+async def get_context(task: str, session_id: str | None = None):
     """
     Captures the current browser state, sanitizes it, and returns the context to the agent.
     """
@@ -98,19 +108,26 @@ async def get_context(task: str):
     try:
         logger.info(f"Capturing context for task: {task}")
 
-        # Capture raw state
-        raw_state = await capture_service.capture_state()
-        logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
-
-        # Sanitize
-        sanitized_state = sanitizer.sanitize(raw_state)
+        # Prefer a recently perceived real-browser session. Its raw DOM is not
+        # exposed here; only the already sanitized state is agent-facing.
+        extension_session = session_id or extension_bridge.active_session_id()
+        extension_record = extension_bridge.get_session(extension_session) if extension_session else None
+        sanitized_state = extension_record.state if extension_record else None
+        if session_id and not extension_record:
+            raise HTTPException(status_code=404, detail="No sanitized state for requested browser session")
+        if sanitized_state is None:
+            raw_state = await capture_service.capture_state()
+            logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
+            sanitized_state = sanitizer.sanitize(raw_state)
         current_sanitized_state = sanitized_state
 
         logger.info(f"Context captured successfully - URL: {sanitized_state.url}")
 
         return AgentContext(
             task=task,
-            page=sanitized_state
+            page=sanitized_state,
+            session_id=extension_session if extension_record else None,
+            page_revision=extension_record.page_revision if extension_record else None,
         )
     except Exception as e:
         logger.error(f"Failed to capture context: {e}\n{traceback.format_exc()}")
@@ -131,8 +148,10 @@ async def perform_action(action: AgentAction):
         raise HTTPException(status_code=400, detail="No active context. Request context first or navigate.")
 
     try:
+        session_id = action.session_id or extension_bridge.active_session_id()
+        session = extension_bridge.get_session(session_id) if session_id else None
         # Validate action
-        if action.action != "navigate":
+        if action.action != "navigate" and not session:
             try:
                 action_validator.validate(action, current_sanitized_state)
                 logger.debug("Action validation passed")
@@ -140,7 +159,32 @@ async def perform_action(action: AgentAction):
                 logger.warning(f"Action validation failed: {validation_error}")
                 return ActionResult(success=False, error=str(validation_error))
 
-        # Execute action
+        if session:
+            if not action.session_id or action.page_revision is None:
+                return ActionResult(success=False, error="Extension actions require session_id and page_revision.")
+            if action.page_revision != session.page_revision:
+                return ActionResult(success=False, error="Stale action: request a fresh sanitized page context.")
+            if action.action == "navigate":
+                return ActionResult(success=False, error="Extension agents may not navigate to a new origin; activate that origin explicitly.")
+            if action.action not in {"click", "fill", "submit"}:
+                return ActionResult(success=False, error="Action is not supported by the extension execution policy.")
+            # Resolve sensitive values exclusively inside the trusted backend.
+            resolved_value = action.value
+            if action.value_token and action.value_token.startswith("["):
+                resolved_value = value_store.get_value(action.value_token, session_id)
+                if resolved_value is None:
+                    raise ValueError("Invalid or expired sensitive value token.")
+            try:
+                action_validator.validate(action, session.state, scope_id=session_id)
+            except ValueError as validation_error:
+                logger.warning(f"Action validation failed: {validation_error}")
+                return ActionResult(success=False, error=str(validation_error))
+            extension_bridge.enqueue(session_id, action=action.action,
+                                    element_id=action.element_id, value=resolved_value, url=action.url)
+            logger.info("Queued validated action for local Chrome extension")
+            return ActionResult(success=True, new_state=current_sanitized_state)
+
+        # Existing Playwright execution path remains unchanged.
         await action_executor.execute(action)
         logger.info(f"Action {action.action} executed successfully")
 
@@ -165,3 +209,48 @@ async def perform_action(action: AgentAction):
     except Exception as e:
         logger.error(f"Internal execution error: {e}\n{traceback.format_exc()}")
         return ActionResult(success=False, error=f"Internal execution error: {str(e)}")
+
+
+@app.post("/browser/perception", response_model=SanitizedPageState)
+async def receive_browser_perception(request: BrowserPerceptionRequest):
+    """Trusted extension ingress. Raw DOM is sanitized before it can be read by an agent."""
+    global current_sanitized_state
+    try:
+        allowed, reason = origin_decision(request.page.url)
+        if not allowed:
+            raise HTTPException(status_code=403, detail=reason)
+        sanitized_state = sanitizer.sanitize(request.page, scope_id=request.session_id)
+        extension_bridge.save_state(request.session_id, sanitized_state)
+        current_sanitized_state = sanitized_state
+        # Never log request.page: it contains the raw values by design.
+        logger.info("Received and sanitized extension page state (%d elements)",
+                    len(sanitized_state.elements))
+        return sanitized_state
+    except Exception as e:
+        logger.error("Failed to sanitize extension page state: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid browser perception payload")
+
+
+@app.get("/browser/state/{session_id}", response_model=SanitizedPageState)
+async def browser_sanitized_state(session_id: str):
+    """Safe inspection endpoint; it deliberately has no raw-DOM counterpart."""
+    state = extension_bridge.get_state(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="No sanitized state for session")
+    return state
+
+
+@app.get("/browser/actions/next")
+async def next_browser_action(session_id: str):
+    action = extension_bridge.next_action(session_id)
+    if not action:
+        return Response(status_code=204)
+    return action
+
+
+@app.post("/browser/actions/result")
+async def browser_action_result(result: BrowserActionResult):
+    extension_bridge.record_result(result.action_id, result.success)
+    if not result.success:
+        logger.warning("Chrome extension reported action failure: %s", result.error or "unspecified")
+    return {"ok": True}

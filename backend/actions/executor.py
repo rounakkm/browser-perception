@@ -22,7 +22,7 @@ class ActionExecutor:
             
         elif action.action == "fill":
           
-            value_to_fill = action.value_token
+            value_to_fill = action.value if action.value is not None else action.value_token
             if value_to_fill and value_to_fill.startswith("[") and value_to_fill.endswith("]"):
                 real_value = value_store.get_value(value_to_fill)
                 if real_value:
@@ -35,4 +35,3 @@ class ActionExecutor:
         elif action.action == "submit":
             await page.evaluate(f"document.querySelector('{selector}').submit()")
             
-       
