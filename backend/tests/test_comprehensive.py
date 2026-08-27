@@ -4,6 +4,7 @@ Tests cover perception engines, PII detection, API endpoints, and integration sc
 """
 
 import pytest
+import pytest_asyncio
 import os
 import tempfile
 from unittest.mock import Mock, patch, AsyncMock
@@ -11,7 +12,7 @@ import json
 from pathlib import Path
 
 # Import modules to test
-from backend.models.domain import PageState, DOMElement, SanitizedPageState, AgentAction, AgentContext
+from backend.models.domain import PageState, DOMElement, SanitizedElement, SanitizedPageState, AgentAction, AgentContext
 from backend.sanitization.engine import SanitizationEngine
 from backend.pii.detector import PIIDetector
 from backend.security.store import value_store
@@ -265,7 +266,7 @@ class TestActionValidator:
             url="http://test.com",
             title="Test",
             elements=[
-                Mock(element_id="btn_submit", is_interactive=True)
+                SanitizedElement(element_id="btn_submit", type="button", is_interactive=True)
             ],
             viewport={"width": 800, "height": 600},
             timestamp=100.0
@@ -519,7 +520,7 @@ class TestPrivacyBoundary:
 
 
 # Async fixtures for API tests
-@pytest.fixture
+@pytest_asyncio.fixture
 async def mock_browser():
     """Mock browser connector."""
     browser = AsyncMock()

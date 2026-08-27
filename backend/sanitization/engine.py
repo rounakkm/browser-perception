@@ -17,7 +17,7 @@ class SanitizationEngine:
     def __init__(self):
         self.detector = PIIDetector()
 
-    def sanitize(self, page_state: PageState) -> SanitizedPageState:
+    def sanitize(self, page_state: PageState, scope_id: str | None = None) -> SanitizedPageState:
         sanitized_elements = []
         
         for elem in page_state.dom_elements:
@@ -38,7 +38,7 @@ class SanitizationEngine:
                 
               
                 raw_val = elem.value if elem.value else DEFAULT_SAMPLE_SECRETS.get(finding.category, "secret_value")
-                token = value_store.store_value(raw_val, finding.category)
+                token = value_store.store_value(raw_val, finding.category, scope_id)
                 sanitized_elem.value = token
                 
                 
@@ -48,7 +48,7 @@ class SanitizationEngine:
                     for category, pattern in self.detector.patterns.items():
                         matches = pattern.findall(sanitized_text)
                         for match in matches:
-                            txt_token = value_store.store_value(match, category)
+                            txt_token = value_store.store_value(match, category, scope_id)
                             sanitized_text = sanitized_text.replace(match, txt_token)
                     sanitized_elem.text = sanitized_text
             else:

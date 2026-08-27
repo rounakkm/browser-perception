@@ -201,6 +201,44 @@ curl -X POST http://localhost:8000/agent/action \
   }'
 ```
 
+## Real Chrome / Chromium extension demo
+
+The original Playwright connector is still available. For a real Chrome window,
+use the additive Manifest V3 bridge in `extension/`:
+
+```bash
+source venv/bin/activate
+export PYTHONPATH=$(pwd)
+uvicorn backend.demo.webapp.app:app --host 127.0.0.1 --port 8080
+# In a second terminal:
+uvicorn backend.api.gateway:app --host 127.0.0.1 --port 8000
+```
+
+Load `extension/` with **Developer mode → Load unpacked** at
+`chrome://extensions`, then open `http://127.0.0.1:8080/profile`. The extension
+collects raw page state only for the local gateway, which returns and retains a
+sanitized state. Start the mock workflow in a third terminal:
+
+```bash
+source venv/bin/activate
+export PYTHONPATH=$(pwd)
+python -m backend.demo.run_chrome_agent
+```
+
+The terminal's agent view prints tokens such as `[ACCOUNT_NUMBER_0]`; the
+extension receives an action containing the resolved synthetic value only after
+the local validator accepts it. There is intentionally no API for reading raw
+DOM or secret-store contents.
+
+### Local extension endpoints
+
+- `POST /browser/perception` — extension-only raw state ingress; response is sanitized.
+- `GET /browser/state/{session_id}` — sanitized state only.
+- `GET /browser/actions/next?session_id=...` — extension action poll.
+- `POST /browser/actions/result` — extension action acknowledgement.
+
+Existing agent endpoints (`/agent/context`, `/agent/action`) remain compatible.
+
 ## 🔐 Privacy Architecture
 
 ### PII Detection Strategy
