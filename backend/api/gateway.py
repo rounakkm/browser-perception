@@ -1,15 +1,22 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from backend.models.domain import AgentContext, AgentAction, ActionResult, SanitizedPageState, DashboardState, ProcessingMetrics
+from backend.models.domain import (
+    AgentContext, AgentAction, ActionResult, SanitizedPageState,
+    DashboardState, ProcessingMetrics, BrowserPerceptionRequest,
+    BrowserActionResult, ExtensionAction
+)
 from backend.browser.connector import BrowserConnector
+from backend.browser.extension_bridge import ExtensionBridge
 from backend.capture.service import CaptureService
 from backend.sanitization.engine import SanitizationEngine
 from backend.actions.validator import ActionValidator
 from backend.actions.executor import ActionExecutor
 from backend.config.settings import settings
 from backend.config.logging import setup_logging, get_logger
+from backend.security.origin_policy import origin_decision
+from backend.security.store import value_store
 import asyncio
 import time
 import traceback
@@ -36,13 +43,15 @@ app.add_middleware(
 # Global state
 browser: BrowserConnector = None
 capture_service: CaptureService = None
-sanitizer: SanitizationEngine = None
-action_validator: ActionValidator = None
+sanitizer: SanitizationEngine = SanitizationEngine()
+action_validator: ActionValidator = ActionValidator()
 action_executor: ActionExecutor = None
 current_sanitized_state: SanitizedPageState = None
 latest_dashboard_state: DashboardState = None
 startup_time: float = None
 browser_lock: asyncio.Lock = asyncio.Lock()
+extension_bridge: ExtensionBridge = ExtensionBridge()
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -69,6 +78,7 @@ async def startup_event():
         logger.error(f"Failed to initialize browser: {e}\n{traceback.format_exc()}")
         raise
 
+
 @app.on_event("shutdown")
 async def shutdown_event():
     global browser
@@ -76,6 +86,7 @@ async def shutdown_event():
     if browser:
         await browser.stop()
     logger.info("Shutdown complete")
+
 
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
@@ -90,6 +101,7 @@ async def health_check() -> Dict[str, Any]:
         "version": "1.0.0"
     }
 
+
 @app.get("/config")
 async def get_config() -> Dict[str, Any]:
     """Get current configuration (safe values only)."""
@@ -102,6 +114,7 @@ async def get_config() -> Dict[str, Any]:
         "browser_headless": settings.BROWSER_HEADLESS,
     }
 
+
 @app.post("/agent/context", response_model=AgentContext)
 async def get_context(task: str, session_id: str | None = None):
     """
@@ -112,15 +125,13 @@ async def get_context(task: str, session_id: str | None = None):
     try:
         logger.info(f"Capturing context for task: {task}")
 
-        # Prefer a recently perceived real-browser session. Its raw DOM is not
-        # exposed here; only the already sanitized state is agent-facing.
         extension_session = session_id or extension_bridge.active_session_id()
         extension_record = extension_bridge.get_session(extension_session) if extension_session else None
         sanitized_state = extension_record.state if extension_record else None
         if session_id and not extension_record:
             raise HTTPException(status_code=404, detail="No sanitized state for requested browser session")
         if sanitized_state is None:
-            raw_state = await capture_service.capture_state()
+            raw_state, _, _, _ = await capture_service.capture_state()
             logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
             sanitized_state = sanitizer.sanitize(raw_state)
         current_sanitized_state = sanitized_state
@@ -137,11 +148,12 @@ async def get_context(task: str, session_id: str | None = None):
         logger.error(f"Failed to capture context: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to capture context: {str(e)}")
 
+
 @app.post("/agent/action", response_model=ActionResult)
 async def perform_action(action: AgentAction):
     """
     Receives an action from the agent, validates it against the current sanitized state,
-    and executes it locally.
+    and executes it locally or queues it for the Chrome extension.
     """
     global current_sanitized_state
 
@@ -152,8 +164,37 @@ async def perform_action(action: AgentAction):
         raise HTTPException(status_code=400, detail="No active context. Request context first or navigate.")
 
     try:
+        session_id = action.session_id or extension_bridge.active_session_id()
+        session = extension_bridge.get_session(session_id) if session_id else None
+
+        if session:
+            if not action.session_id or action.page_revision is None:
+                return ActionResult(success=False, error="Extension actions require session_id and page_revision.")
+            if action.page_revision != session.page_revision:
+                return ActionResult(success=False, error="Stale action: request a fresh sanitized page context.")
+            if action.action == "navigate":
+                return ActionResult(success=False, error="Extension agents may not navigate to a new origin; activate that origin explicitly.")
+            if action.action not in {"click", "fill", "submit"}:
+                return ActionResult(success=False, error="Action is not supported by the extension execution policy.")
+            
+            resolved_value = action.value
+            if action.value_token and action.value_token.startswith("["):
+                resolved_value = value_store.get_value(action.value_token, session_id)
+                if resolved_value is None:
+                    raise ValueError("Invalid or expired sensitive value token.")
+            
+            try:
+                action_validator.validate(action, session.state, scope_id=session_id)
+            except ValueError as validation_error:
+                logger.warning(f"Action validation failed: {validation_error}")
+                return ActionResult(success=False, error=str(validation_error))
+
+            extension_bridge.enqueue(session_id, action=action.action,
+                                    element_id=action.element_id, value=resolved_value, url=action.url)
+            logger.info("Queued validated action for local Chrome extension")
+            return ActionResult(success=True, new_state=current_sanitized_state)
+
         async with browser_lock:
-            # Validate action
             if action.action != "navigate":
                 try:
                     action_validator.validate(action, current_sanitized_state)
@@ -162,14 +203,11 @@ async def perform_action(action: AgentAction):
                     logger.warning(f"Action validation failed: {validation_error}")
                     return ActionResult(success=False, error=str(validation_error))
 
-            # Execute action
             await action_executor.execute(action)
             logger.info(f"Action {action.action} executed successfully")
 
-            # Wait for page to stabilize
             await asyncio.sleep(1.0)
 
-            # Capture new state
             raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
             
             t0 = time.time()
@@ -208,12 +246,58 @@ async def perform_action(action: AgentAction):
         logger.error(f"Internal execution error: {e}\n{traceback.format_exc()}")
         return ActionResult(success=False, error=f"Internal execution error: {str(e)}")
 
+
+@app.post("/browser/perception", response_model=SanitizedPageState)
+async def receive_browser_perception(request: BrowserPerceptionRequest):
+    """Trusted extension ingress. Raw DOM is sanitized before it can be read by an agent."""
+    global current_sanitized_state
+    try:
+        allowed, reason = origin_decision(request.page.url)
+        if not allowed:
+            raise HTTPException(status_code=403, detail=reason)
+        sanitized_state = sanitizer.sanitize(request.page, scope_id=request.session_id)
+        extension_bridge.save_state(request.session_id, sanitized_state)
+        current_sanitized_state = sanitized_state
+        logger.info("Received and sanitized extension page state (%d elements)",
+                    len(sanitized_state.elements))
+        return sanitized_state
+    except Exception as e:
+        logger.error("Failed to sanitize extension page state: %s", e)
+        raise HTTPException(status_code=400, detail="Invalid browser perception payload")
+
+
+@app.get("/browser/state/{session_id}", response_model=SanitizedPageState)
+async def browser_sanitized_state(session_id: str):
+    """Safe inspection endpoint; it deliberately has no raw-DOM counterpart."""
+    state = extension_bridge.get_state(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="No sanitized state for session")
+    return state
+
+
+@app.get("/browser/actions/next")
+async def next_browser_action(session_id: str):
+    action = extension_bridge.next_action(session_id)
+    if not action:
+        return Response(status_code=204)
+    return action
+
+
+@app.post("/browser/actions/result")
+async def browser_action_result(result: BrowserActionResult):
+    extension_bridge.record_result(result.action_id, result.success)
+    if not result.success:
+        logger.warning("Chrome extension reported action failure: %s", result.error or "unspecified")
+    return {"ok": True}
+
+
 @app.get("/dashboard/state", response_model=DashboardState)
 async def get_dashboard_state():
     """Endpoint for the UI to retrieve the latest full perception state."""
     if not latest_dashboard_state:
         raise HTTPException(status_code=404, detail="No capture state available yet")
     return latest_dashboard_state
+
 
 @app.get("/dashboard/logs")
 async def get_dashboard_logs(limit: int = 500):
@@ -225,8 +309,6 @@ async def get_dashboard_logs(limit: int = 500):
     try:
         with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
-            
-        # Return only the last `limit` lines to keep it light
         return {"logs": lines[-limit:]}
     except Exception as e:
         logger.error(f"Error reading logs: {e}")

@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 # Import modules to test
-from backend.models.domain import PageState, DOMElement, SanitizedPageState, AgentAction, AgentContext
+from backend.models.domain import PageState, DOMElement, SanitizedPageState, SanitizedElement, AgentAction, AgentContext
 from backend.sanitization.engine import SanitizationEngine
 from backend.pii.detector import PIIDetector
 from backend.security.store import value_store
@@ -265,7 +265,7 @@ class TestActionValidator:
             url="http://test.com",
             title="Test",
             elements=[
-                Mock(element_id="btn_submit", is_interactive=True)
+                SanitizedElement(element_id="btn_submit", type="button", is_interactive=True)
             ],
             viewport={"width": 800, "height": 600},
             timestamp=100.0

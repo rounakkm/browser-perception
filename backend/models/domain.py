@@ -72,6 +72,26 @@ class ActionResult(BaseModel):
     error: Optional[str] = None
     new_state: Optional[SanitizedPageState] = None
 
+class BrowserPerceptionRequest(BaseModel):
+    """Raw browser data accepted only from the local extension boundary."""
+    session_id: str
+    page: PageState
+
+class BrowserActionResult(BaseModel):
+    session_id: str
+    action_id: str
+    success: bool
+    error: Optional[str] = None
+
+class ExtensionAction(BaseModel):
+    """Action sent from the trusted backend to the extension, never the agent."""
+    action_id: str
+    action: str
+    element_id: Optional[str] = None
+    value: Optional[str] = None
+    url: Optional[str] = None
+
+
 class ProcessingMetrics(BaseModel):
     capture_ms: float = 0
     dom_ms: float = 0
