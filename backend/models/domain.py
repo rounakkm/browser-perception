@@ -53,12 +53,19 @@ class SanitizedPageState(BaseModel):
 class AgentContext(BaseModel):
     task: str
     page: SanitizedPageState
+    session_id: Optional[str] = None
+    page_revision: Optional[int] = None
 
 class AgentAction(BaseModel):
     action: str # "click", "fill", "scroll", "navigate", "submit"
     element_id: Optional[str] = None
+    # Plain values are only valid for non-sensitive fields.  value_token is the
+    # only agent-visible reference to a sensitive value.
+    value: Optional[str] = None
     value_token: Optional[str] = None
     url: Optional[str] = None # For navigation
+    session_id: Optional[str] = None
+    page_revision: Optional[int] = None
 
 class ActionResult(BaseModel):
     success: bool

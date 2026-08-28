@@ -103,7 +103,7 @@ async def get_config() -> Dict[str, Any]:
     }
 
 @app.post("/agent/context", response_model=AgentContext)
-async def get_context(task: str):
+async def get_context(task: str, session_id: str | None = None):
     """
     Captures the current browser state, sanitizes it, and returns the context to the agent.
     """
@@ -112,40 +112,27 @@ async def get_context(task: str):
     try:
         logger.info(f"Capturing context for task: {task}")
 
-        async with browser_lock:
-            # Capture raw state
-            raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
+        # Prefer a recently perceived real-browser session. Its raw DOM is not
+        # exposed here; only the already sanitized state is agent-facing.
+        extension_session = session_id or extension_bridge.active_session_id()
+        extension_record = extension_bridge.get_session(extension_session) if extension_session else None
+        sanitized_state = extension_record.state if extension_record else None
+        if session_id and not extension_record:
+            raise HTTPException(status_code=404, detail="No sanitized state for requested browser session")
+        if sanitized_state is None:
+            raw_state = await capture_service.capture_state()
             logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
-
-            # Sanitize
-            t0 = time.time()
             sanitized_state = sanitizer.sanitize(raw_state)
-            metrics['sanitization_ms'] = (time.time() - t0) * 1000
-            metrics['total_ms'] = sum(metrics.values())
-            
-            current_sanitized_state = sanitized_state
+        current_sanitized_state = sanitized_state
 
-            global latest_dashboard_state
-            screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
-            latest_dashboard_state = DashboardState(
-                url=raw_state.url,
-                title=raw_state.title,
-                screenshot_url=screenshot_url,
-                raw_elements=raw_state.dom_elements,
-                sanitized_elements=sanitized_state.elements,
-                ocr_results=ocr_findings,
-                vision_results=vision_boxes,
-                metrics=ProcessingMetrics(**metrics),
-                viewport=raw_state.viewport,
-                timestamp=raw_state.timestamp
-            )
+        logger.info(f"Context captured successfully - URL: {sanitized_state.url}")
 
-            logger.info(f"Context captured successfully - URL: {sanitized_state.url}")
-
-            return AgentContext(
-                task=task,
-                page=sanitized_state
-            )
+        return AgentContext(
+            task=task,
+            page=sanitized_state,
+            session_id=extension_session if extension_record else None,
+            page_revision=extension_record.page_revision if extension_record else None,
+        )
     except Exception as e:
         logger.error(f"Failed to capture context: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to capture context: {str(e)}")
