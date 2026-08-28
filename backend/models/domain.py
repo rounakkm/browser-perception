@@ -72,21 +72,22 @@ class ActionResult(BaseModel):
     error: Optional[str] = None
     new_state: Optional[SanitizedPageState] = None
 
-class BrowserPerceptionRequest(BaseModel):
-    """Raw browser data accepted only from the local extension boundary."""
-    session_id: str
-    page: PageState
+class ProcessingMetrics(BaseModel):
+    capture_ms: float = 0
+    dom_ms: float = 0
+    ocr_ms: float = 0
+    vision_ms: float = 0
+    sanitization_ms: float = 0
+    total_ms: float = 0
 
-class BrowserActionResult(BaseModel):
-    session_id: str
-    action_id: str
-    success: bool
-    error: Optional[str] = None
-
-class ExtensionAction(BaseModel):
-    """Action sent from the trusted backend to the extension, never the agent."""
-    action_id: str
-    action: str
-    element_id: Optional[str] = None
-    value: Optional[str] = None
-    url: Optional[str] = None
+class DashboardState(BaseModel):
+    url: str
+    title: str
+    screenshot_url: Optional[str] = None
+    raw_elements: List[DOMElement] = Field(default_factory=list)
+    sanitized_elements: List[SanitizedElement] = Field(default_factory=list)
+    ocr_results: List[VisualElement] = Field(default_factory=list)
+    vision_results: List[VisualElement] = Field(default_factory=list)
+    metrics: ProcessingMetrics = Field(default_factory=ProcessingMetrics)
+    viewport: Dict[str, int]
+    timestamp: float

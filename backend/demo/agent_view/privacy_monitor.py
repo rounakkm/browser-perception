@@ -1,4 +1,7 @@
-from backend.models.domain import SanitizedPageState
+import logging
+from backend.config.logging import get_logger
+
+logger = get_logger("privacy_monitor")
 
 class PrivacyMonitor:
     """
@@ -16,11 +19,11 @@ class PrivacyMonitor:
             url = state.url
             elements = state.elements
 
-        print("\n" + "="*85)
-        print(f" AGENT PERCEPTION VIEW | Page: {title} | URL: {url}")
-        print("="*85)
-        print(f"{'ELEMENT ID':<18} | {'TYPE':<8} | {'LABEL':<22} | {'SENSITIVITY':<12} | {'AGENT VALUE / TEXT':<18}")
-        print("-" * 85)
+        logger.info("\n" + "="*85)
+        logger.info(f" AGENT PERCEPTION VIEW | Page: {title} | URL: {url}")
+        logger.info("="*85)
+        logger.info(f"{'ELEMENT ID':<18} | {'TYPE':<8} | {'LABEL':<22} | {'SENSITIVITY':<12} | {'AGENT VALUE / TEXT':<18}")
+        logger.info("-" * 85)
         
         sensitive_count = 0
         normal_count = 0
@@ -50,25 +53,25 @@ class PrivacyMonitor:
             else:
                 normal_count += 1
                 
-            print(f"{element_id:<18} | {elem_type:<8} | {label[:22]:<22} | {sens_str:<12} | {val_display:<18}")
+            logger.info(f"{element_id:<18} | {elem_type:<8} | {label[:22]:<22} | {sens_str:<12} | {val_display:<18}")
             
-        print("-" * 85)
-        print(f" Summary: {sensitive_count} Sensitive Fields Redacted | {normal_count} Normal Elements Exposed")
-        print("="*85 + "\n")
+        logger.info("-" * 85)
+        logger.info(f" Summary: {sensitive_count} Sensitive Fields Redacted | {normal_count} Normal Elements Exposed")
+        logger.info("="*85 + "\n")
 
     @staticmethod
     def render_privacy_proof_banner(action_count: int, sensitive_fields_count: int):
-        print("\n" + "="*70)
-        print("            PRIVACY DEMONSTRATION COMPLETE            ")
-        print("="*70)
-        print(f" Browser actions executed:         {action_count} SUCCESS")
-        print(f" Sensitive fields detected:        {sensitive_fields_count}")
-        print(f" Sensitive values exposed to agent:{0}")
-        print(f" Raw screenshots sent to agent:    {0}")
-        print(f" Raw DOM sent to agent:            {0}")
-        print(f" Tokenized values sent to agent:   {sensitive_fields_count}")
-        print(f" Local secret resolutions:         {action_count}")
-        print("-" * 70)
-        print(" The browser agent successfully completed the task")
-        print(" without receiving the underlying sensitive values.")
-        print("="*70 + "\n")
+        logger.info("\n" + "="*70)
+        logger.info("            PRIVACY DEMONSTRATION COMPLETE            ")
+        logger.info("="*70)
+        logger.info(f" Browser actions executed:         {action_count} SUCCESS")
+        logger.info(f" Sensitive fields detected:        {sensitive_fields_count}")
+        logger.info(f" Sensitive values exposed to agent:{0}")
+        logger.info(f" Raw screenshots sent to agent:    {0}")
+        logger.info(f" Raw DOM sent to agent:            {0}")
+        logger.info(f" Tokenized values sent to agent:   {sensitive_fields_count}")
+        logger.info(f" Local secret resolutions:         {action_count}")
+        logger.info("-" * 70)
+        logger.info(" The browser agent successfully completed the task")
+        logger.info(" without receiving the underlying sensitive values.")
+        logger.info("="*70 + "\n")

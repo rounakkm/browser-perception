@@ -27,13 +27,16 @@ class OCRPerceptionEngine:
 
         try:
             import spacy
-            try:
-                self.nlp = spacy.load("en_core_web_md")
-                self.spacy_available = True
-                logger.info("SpaCy NER model loaded")
-            except OSError:
-                logger.warning("SpaCy model en_core_web_md not found - NER disabled")
-                self.spacy_available = False
+            for model_name in ["en_core_web_md", "en_core_web_sm"]:
+                try:
+                    self.nlp = spacy.load(model_name)
+                    self.spacy_available = True
+                    logger.info(f"SpaCy NER model loaded: {model_name}")
+                    break
+                except OSError:
+                    continue
+            if not self.spacy_available:
+                logger.warning("No SpaCy model found (tried en_core_web_md, en_core_web_sm) - NER disabled")
         except ImportError:
             logger.warning("SpaCy not available - NER disabled")
             self.spacy_available = False
