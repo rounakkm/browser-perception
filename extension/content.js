@@ -9,7 +9,6 @@
     const explicit = el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
     const ids = (el.getAttribute("aria-labelledby") || "").split(/\s+/).filter(Boolean);
     const referenced = ids.map(id => compactText(document.getElementById(id))).filter(Boolean).join(" ");
-    // A current form value is never a label or a text fallback.
     return compactText(explicit) || el.getAttribute("aria-label") || referenced || compactText(el.closest("label")) || el.getAttribute("placeholder") || ((el.tagName === "BUTTON" || el.tagName === "A") ? compactText(el) : "") || el.name || el.id || null;
   };
   const elementId = (el, index) => {
@@ -46,7 +45,19 @@
       const el = document.getElementById(action.element_id) || document.querySelector(`[data-browser-perception-id="${CSS.escape(action.element_id)}"]`);
       if (!el) throw new Error("Target element no longer exists");
       if (action.action === "click") el.click();
-      else if (action.action === "fill") { if (!("value" in el)) throw new Error("Target is not fillable"); el.focus(); el.value = action.value || ""; el.dispatchEvent(new Event("input", {bubbles: true})); el.dispatchEvent(new Event("change", {bubbles: true})); }
+      else if (action.action === "fill") {
+        if (!("value" in el)) throw new Error("Target is not fillable");
+        el.focus();
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set ||
+                             Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+        if (nativeSetter && (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
+          nativeSetter.call(el, action.value || "");
+        } else {
+          el.value = action.value || "";
+        }
+        el.dispatchEvent(new Event("input", {bubbles: true}));
+        el.dispatchEvent(new Event("change", {bubbles: true}));
+      }
       else if (el.form) el.form.requestSubmit(); else throw new Error("Target has no form");
       sendResponse({success: true}); scheduleReport();
     } catch (error) { sendResponse({success: false, error: String(error.message || error)}); }

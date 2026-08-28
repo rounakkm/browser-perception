@@ -8,5 +8,5 @@
   "optional_host_permissions": ["https://*/*"],
   "background": {"service_worker": "background.js"},
   "action": {"default_title": "Activate Browser Perception on this site"},
-  "content_scripts": [{"matches": ["http://127.0.0.1/*", "http://localhost/*"], "js": ["policy.js", "content.js"], "run_at": "document_idle"}]
+  "content_scripts": [{"matches": ["http://127.0.0.1/*", "http://localhost/*", "file:///*"], "js": ["policy.js", "content.js"], "run_at": "document_idle"}]
 }

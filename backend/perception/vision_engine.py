@@ -21,7 +21,6 @@ class VisionModelPerceptionEngine:
         self.confidence_threshold = settings.VISION_CONFIDENCE_THRESHOLD
         self.iou_threshold = settings.VISION_IOU_THRESHOLD
 
-        # UI element class labels (YOLO format)
         self.class_labels = [
             "button", "input", "text", "image", "link",
             "checkbox", "dropdown", "icon", "label", "container"
@@ -39,7 +38,6 @@ class VisionModelPerceptionEngine:
         try:
             import onnxruntime as ort
 
-            # Determine execution provider
             device = settings.get_device()
             if device == "cuda":
                 providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
@@ -49,7 +47,6 @@ class VisionModelPerceptionEngine:
             self.session = ort.InferenceSession(self.model_path, providers=providers)
             self.is_loaded = True
 
-            # Get input/output info
             self.input_name = self.session.get_inputs()[0].name
             self.output_names = [o.name for o in self.session.get_outputs()]
 
@@ -76,25 +73,19 @@ class VisionModelPerceptionEngine:
         try:
             import cv2
 
-            # Read image
             img = cv2.imread(image_path)
             if img is None:
                 logger.warning(f"Failed to read image: {image_path}")
                 return None
 
-            # Store original dimensions for coordinate mapping
             self.original_height, self.original_width = img.shape[:2]
 
-            # Resize to model input size
             img_resized = cv2.resize(img, (self.input_size, self.input_size))
 
-            # Convert BGR to RGB
             img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
 
-            # Normalize to [0, 1]
             img_normalized = img_rgb.astype(np.float32) / 255.0
 
-            # Transpose to (C, H, W) and add batch dimension
             img_tensor = np.transpose(img_normalized, (2, 0, 1))
             img_tensor = np.expand_dims(img_tensor, axis=0)
 
@@ -120,20 +111,15 @@ class VisionModelPerceptionEngine:
         detections = []
 
         try:
-            # YOLOv8 output format: (batch, num_detections, 4 + num_classes)
-            # Typically shape is (1, 84, 8400) for YOLOv8-nano
 
-            output = outputs[0]  # Remove batch dimension
+            output = outputs[0]
 
-            # Transpose if needed (YOLOv8 outputs as (1, 84, 8400))
             if output.shape[0] == 84 or output.shape[0] > 100:
                 output = output.T
 
-            # Extract boxes, scores, and class IDs
             boxes = output[:, :4]
             scores = output[:, 4]
 
-            # If multiple classes, get max class score
             if output.shape[1] > 5:
                 class_scores = output[:, 4:]
                 class_ids = np.argmax(class_scores, axis=1)
@@ -141,27 +127,22 @@ class VisionModelPerceptionEngine:
             else:
                 class_ids = np.zeros(len(output), dtype=int)
 
-            # Filter by confidence threshold
             mask = scores > self.confidence_threshold
             boxes = boxes[mask]
             scores = scores[mask]
             class_ids = class_ids[mask]
 
-            # Apply Non-Maximum Suppression
             if len(boxes) > 0:
                 boxes_nms, scores_nms, class_ids_nms = self._nms(boxes, scores, class_ids)
 
                 for box, score, class_id in zip(boxes_nms, scores_nms, class_ids_nms):
-                    # Convert coordinates from normalized to original image size
                     x_center, y_center, width, height = box
 
-                    # Scale to original image dimensions
                     x_center = x_center * self.original_width / self.input_size
                     y_center = y_center * self.original_height / self.input_size
                     width = width * self.original_width / self.input_size
                     height = height * self.original_height / self.input_size
 
-                    # Convert to top-left corner format
                     x = int(x_center - width / 2)
                     y = int(y_center - height / 2)
                     w = int(width)
@@ -195,17 +176,14 @@ class VisionModelPerceptionEngine:
         try:
             import cv2
 
-            # Convert boxes to (x, y, width, height) format for NMS
             boxes_xywh = boxes.copy()
-            boxes_xywh[:, 0] = boxes[:, 0] - boxes[:, 2] / 2  # x_center to x
-            boxes_xywh[:, 1] = boxes[:, 1] - boxes[:, 3] / 2  # y_center to y
+            boxes_xywh[:, 0] = boxes[:, 0] - boxes[:, 2] / 2
+            boxes_xywh[:, 1] = boxes[:, 1] - boxes[:, 3] / 2
 
-            # Convert to (x1, y1, x2, y2) for NMSBoxes
             boxes_xyxy = boxes_xywh.copy()
             boxes_xyxy[:, 2] = boxes_xyxy[:, 0] + boxes_xyxy[:, 2]
             boxes_xyxy[:, 3] = boxes_xyxy[:, 1] + boxes_xyxy[:, 3]
 
-            # Apply NMS
             indices = cv2.dnn.NMSBoxes(
                 boxes_xyxy.tolist(),
                 scores.tolist(),
@@ -236,19 +214,15 @@ class VisionModelPerceptionEngine:
             logger.debug("Vision model not loaded, returning empty detections")
             return []
 
-        # Preprocess image
         img_tensor = self._preprocess_image(screenshot_path)
         if img_tensor is None:
             return []
 
         try:
-            # Run inference
             outputs = self.session.run(self.output_names, {self.input_name: img_tensor})
 
-            # Postprocess
             detections = self._postprocess_output(outputs[0])
 
-            # Convert to VisualElement format
             visual_elements = []
             for det in detections:
                 visual_elements.append(VisualElement(

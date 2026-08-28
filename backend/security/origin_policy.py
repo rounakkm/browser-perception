@@ -17,7 +17,7 @@ def origin_decision(url: str) -> tuple[bool, str]:
     """
     parsed = urlparse(url)
     host = (parsed.hostname or "").lower()
-    if parsed.scheme == "http" and host in LOCAL_HOSTS:
+    if parsed.scheme == "file" or (parsed.scheme == "http" and host in LOCAL_HOSTS):
         return True, "local demo origin"
     if parsed.scheme != "https" or not host:
         return False, "only HTTPS origins and the localhost demo are supported"

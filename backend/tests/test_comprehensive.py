@@ -11,7 +11,6 @@ from unittest.mock import Mock, patch, AsyncMock
 import json
 from pathlib import Path
 
-# Import modules to test
 from backend.models.domain import PageState, DOMElement, SanitizedElement, SanitizedPageState, AgentAction, AgentContext
 from backend.sanitization.engine import SanitizationEngine
 from backend.pii.detector import PIIDetector
@@ -156,7 +155,6 @@ class TestSanitizationEngine:
 
         sanitized = self.sanitizer.sanitize(page_state)
 
-        # Check that actual email is replaced with token
         assert sanitized.elements[0].sensitive is True
         assert "[EMAIL" in sanitized.elements[0].value
         assert "user@example.com" not in sanitized.elements[0].value
@@ -189,7 +187,6 @@ class TestSanitizationEngine:
         sanitized = self.sanitizer.sanitize(page_state)
         json_output = sanitized.model_dump_json()
 
-        # Verify no actual values appear
         assert "MySecretPassword123!" not in json_output
         assert "9876543210" not in json_output
 
@@ -214,7 +211,6 @@ class TestSanitizationEngine:
         sanitized = self.sanitizer.sanitize(page_state)
         elem = sanitized.elements[0]
 
-        # Label should be preserved, value should be tokenized
         assert elem.label == "Full Name"
         assert elem.value.startswith("[PERSON_NAME")
         assert "John Doe" not in elem.value
@@ -332,7 +328,6 @@ class TestOCREngine:
     def test_ocr_engine_initialization(self):
         """Test that OCR engine initializes gracefully."""
         assert self.ocr is not None
-        # Don't assert on availability - may not have dependencies
 
     def test_visual_text_extraction_from_dom(self):
         """Test text extraction from DOM elements."""
@@ -353,7 +348,6 @@ class TestOCREngine:
 
         findings = self.ocr.extract_visual_text(elements)
 
-        # Should only find non-interactive with sensitive keywords
         assert len(findings) > 0
         assert findings[0].text_content == "Account: 1234567890"
 
@@ -386,7 +380,6 @@ class TestVisionEngine:
     def test_vision_engine_initialization(self):
         """Test that vision engine initializes gracefully."""
         assert self.vision is not None
-        # Model may not be available, but engine should initialize
 
     def test_model_info_available(self):
         """Test that model info can be retrieved."""
@@ -430,7 +423,6 @@ class TestSettingsConfiguration:
     def test_directory_creation(self):
         """Test that settings can create directories."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Override settings temporarily
             original_model_dir = settings.MODEL_DIR
             settings.MODEL_DIR = os.path.join(tmpdir, "models")
 
@@ -438,7 +430,6 @@ class TestSettingsConfiguration:
 
             assert os.path.exists(settings.MODEL_DIR)
 
-            # Restore
             settings.MODEL_DIR = original_model_dir
 
 
@@ -451,7 +442,6 @@ class TestPrivacyBoundary:
 
     def test_end_to_end_sanitization(self):
         """Test complete sanitization pipeline."""
-        # Simulate a banking page
         page_state = PageState(
             url="http://bank.example.com/account",
             title="Account Settings",
@@ -499,27 +489,22 @@ class TestPrivacyBoundary:
         sanitizer = SanitizationEngine()
         sanitized = sanitizer.sanitize(page_state)
 
-        # Verify sanitization
         json_output = sanitized.model_dump_json()
 
-        # No PII should appear in JSON
         assert "Rahul Sharma" not in json_output
         assert "rahul@example.com" not in json_output
         assert "1234567890123456" not in json_output
         assert "SecurePass123!" not in json_output
 
-        # All values should be tokenized
         for elem in sanitized.elements:
             if elem.sensitive:
                 assert elem.value.startswith("[")
                 assert elem.value.endswith("]")
 
-        # Labels should be preserved
         name_elem = next(e for e in sanitized.elements if e.element_id == "name_field")
         assert name_elem.label == "Full Name"
 
 
-# Async fixtures for API tests
 @pytest_asyncio.fixture
 async def mock_browser():
     """Mock browser connector."""
@@ -540,8 +525,6 @@ class TestAPIEndpoints:
         """Test health check endpoint."""
         from backend.api.gateway import app, startup_event, browser as global_browser
 
-        # Would need proper async setup - this is a placeholder
-        # In practice, use FastAPI TestClient or httpx AsyncClient
 
 
 if __name__ == "__main__":

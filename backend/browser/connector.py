@@ -13,7 +13,6 @@ class BrowserConnector:
     async def start(self, headless: Optional[bool] = None):
         if headless is None:
             headless = settings.BROWSER_HEADLESS
-            
         self._playwright = await async_playwright().start()
         self._browser = await self._playwright.chromium.launch(
             headless=headless,
@@ -57,33 +56,25 @@ class BrowserConnector:
 
     async def extract_dom_elements(self) -> List[DOMElement]:
         page = await self.get_page()
-        
         script = """
         () => {
             const elements = [];
             const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
             let idCounter = 0;
-            
             while(walker.nextNode()) {
                 const node = walker.currentNode;
                 const tagName = node.tagName.toLowerCase();
                 const isInteractive = ['input', 'button', 'select', 'textarea', 'a'].includes(tagName);
-                
                 const style = window.getComputedStyle(node);
                 if (style.display === 'none' || style.visibility === 'hidden') continue;
-                
                 const rect = node.getBoundingClientRect();
                 if (rect.width === 0 || rect.height === 0) continue;
-                
                 const hasDirectText = Array.from(node.childNodes).some(child => child.nodeType === 3 && child.textContent.trim().length > 0);
-                
                 // Collect interactive inputs/buttons or containers with direct text
                 if (isInteractive || hasDirectText) {
                     const id = node.id || `${tagName}_${idCounter++}`;
                     if (!node.id) node.id = id;
-                    
                     let label = null;
-                    
                     // Label hierarchy priority:
                     // 1. <label for="id">
                     if (node.id) {
@@ -119,12 +110,10 @@ class BrowserConnector:
                     if (!label && isInteractive) {
                         label = node.name || id;
                     }
-                    
                     const attrs = {};
                     for (const attr of node.attributes) {
                         attrs[attr.name] = attr.value;
                     }
-                    
                     elements.push({
                         element_id: id,
                         type: tagName,
@@ -142,9 +131,7 @@ class BrowserConnector:
         }
         """
         raw_elements = await page.evaluate(script)
-        
         dom_elements = []
         for raw in raw_elements:
             dom_elements.append(DOMElement(**raw))
-            
         return dom_elements

@@ -1,31 +1,42 @@
 
+# Environments
 venv/
 .venv/
 env/
 ENV/
 
-
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
 .coverage
 htmlcov/
-.pytest_cache
+.mypy_cache/
+.ruff_cache/
 
-
+# Environment variables & secrets
 .env
 .env.*
 !.env.example
+*.pem
+*.key
 
-
+# Editor & OS metadata
 .DS_Store
 .vscode/
 .idea/
 *.swp
 *.swo
 
-
+# Runtime outputs & model artifacts
 screenshots/
+models/*.onnx
+models/*.pt
+models/*.bin
+models/*.safetensors
 *.png
+*.jpg
+*.jpeg
 *.log
+

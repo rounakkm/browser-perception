@@ -21,10 +21,8 @@ class PrivacyMonitor:
         print("="*85)
         print(f"{'ELEMENT ID':<18} | {'TYPE':<8} | {'LABEL':<22} | {'SENSITIVITY':<12} | {'AGENT VALUE / TEXT':<18}")
         print("-" * 85)
-        
         sensitive_count = 0
         normal_count = 0
-        
         for elem in elements:
             if isinstance(elem, dict):
                 is_interactive = elem.get("is_interactive", False)
@@ -43,15 +41,12 @@ class PrivacyMonitor:
 
             if not is_interactive and not sensitive:
                 continue
-                
             sens_str = " SENSITIVE" if sensitive else " NORMAL"
             if sensitive:
                 sensitive_count += 1
             else:
                 normal_count += 1
-                
             print(f"{element_id:<18} | {elem_type:<8} | {label[:22]:<22} | {sens_str:<12} | {val_display:<18}")
-            
         print("-" * 85)
         print(f" Summary: {sensitive_count} Sensitive Fields Redacted | {normal_count} Normal Elements Exposed")
         print("="*85 + "\n")

@@ -16,7 +16,6 @@ class PIIDetector:
             "CREDIT_CARD": re.compile(r"\b(?:\d{4}[-\s]?){3}\d{4}\b"),
             "PIN": re.compile(r"\b\d{4,6}\b"),
         }
-        
         self.sensitive_keywords = {
             "name": "PERSON_NAME",
             "full_name": "PERSON_NAME",
@@ -33,7 +32,6 @@ class PIIDetector:
             "pin": "PIN",
             "secret": "PASSWORD",
             "cvv": "PASSWORD",
-            # Indian-specific keywords
             "aadhaar": "AADHAAR",
             "aadhar": "AADHAAR",
             "pan": "PAN",
@@ -70,7 +68,6 @@ class PIIDetector:
         return bool(self.patterns["DRIVING_LICENSE"].search(text))
 
     def analyze_element(self, element: DOMElement) -> Optional[PIIFinding]:
-  
         if element.type == "password" or element.attributes.get("type") == "password":
             return PIIFinding(
                 element_id=element.element_id,
@@ -80,9 +77,7 @@ class PIIDetector:
                 value=element.value or ""
             )
 
-       
         context_text = f"{element.label or ''} {element.attributes.get('name', '')} {element.attributes.get('id', '')}".lower()
-        
         for keyword, category in self.sensitive_keywords.items():
             if keyword in context_text:
                 return PIIFinding(
@@ -93,7 +88,6 @@ class PIIDetector:
                     value=element.value or ""
                 )
 
-        
         text_to_check = element.value or element.text or ""
         if text_to_check:
             for category, pattern in self.patterns.items():
@@ -105,5 +99,4 @@ class PIIDetector:
                         source="regex",
                         value=text_to_check
                     )
-                    
         return None

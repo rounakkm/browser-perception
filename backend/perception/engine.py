@@ -17,14 +17,8 @@ class PerceptionEngine:
         self.vision_engine = VisionModelPerceptionEngine()
 
     def perceive(self, raw_dom_elements: List[DOMElement], screenshot_path: Optional[str] = None) -> List[DOMElement]:
-        
         perceived_dom = self.dom_engine.process_elements(raw_dom_elements)
-        
-        
         ocr_findings = self.ocr_engine.extract_visual_text(perceived_dom, screenshot_path)
-        
-        
         if screenshot_path:
             vision_boxes = self.vision_engine.detect_ui_bounding_boxes(screenshot_path)
-            
         return perceived_dom

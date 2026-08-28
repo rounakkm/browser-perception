@@ -35,13 +35,10 @@ def profile_page_state():
 def test_no_synthetic_secrets_in_agent_payload(profile_page_state):
     value_store.clear()
     sanitizer = SanitizationEngine()
-    
     sanitized_state = sanitizer.sanitize(profile_page_state)
     payload_json = sanitized_state.model_dump_json()
-    
     for secret in SYNTHETIC_SECRETS:
         assert secret not in payload_json, f"CRITICAL LEAK: Synthetic secret '{secret}' found in agent payload!"
-        
 
     assert "[PERSON_NAME" in payload_json
     assert "[EMAIL" in payload_json
@@ -53,7 +50,6 @@ def test_no_synthetic_secrets_in_agent_payload(profile_page_state):
 def test_label_is_never_input_value(profile_page_state):
     sanitizer = SanitizationEngine()
     sanitized_state = sanitizer.sanitize(profile_page_state)
-    
     for elem in sanitized_state.elements:
         if elem.element_id == "full_name":
             assert elem.label == "Full Name"

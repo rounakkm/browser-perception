@@ -20,7 +20,6 @@ def run_webapp():
     uvicorn.run(webapp, host="127.0.0.1", port=WEBAPP_PORT, log_level="warning")
 
 def run_gateway():
-  
     settings.BROWSER_HEADLESS = False
     uvicorn.run(gateway_app, host="127.0.0.1", port=GATEWAY_PORT, log_level="warning")
 
@@ -28,29 +27,19 @@ async def main():
     print("=================================================================")
     print(" STARTING REAL-BROWSER PRIVACY PERCEPTION DEMONSTRATION")
     print("=================================================================")
-    
-    
     webapp_proc = multiprocessing.Process(target=run_webapp, daemon=True)
     webapp_proc.start()
-    
-  
     gateway_proc = multiprocessing.Process(target=run_gateway, daemon=True)
     gateway_proc.start()
-    
 
     await asyncio.sleep(2.5)
-    
     try:
         api_url = f"http://127.0.0.1:{GATEWAY_PORT}"
         base_web_url = f"http://127.0.0.1:{WEBAPP_PORT}"
-        
 
         await execute_profile_scenario(api_url, base_web_url)
-        
-       
         print("Pausing 5 seconds for visual inspection of the Chromium browser window...")
         await asyncio.sleep(5.0)
-        
     finally:
         print("Cleaning up demo processes...")
         webapp_proc.terminate()

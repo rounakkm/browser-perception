@@ -18,7 +18,6 @@ import time
 import traceback
 from typing import Dict, Any
 
-# Initialize logging
 logger = get_logger(__name__)
 
 app = FastAPI(
@@ -26,16 +25,13 @@ app = FastAPI(
     description="On-device Visual Perception for Browser Agents",
     version="1.0.0"
 )
-# The server is intentionally localhost-only. This permits a locally loaded
-# extension to call it while keeping all raw browser data on the device.
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
                    allow_headers=["*"], allow_credentials=False)
 
-# Global state
 browser: BrowserConnector = None
 capture_service: CaptureService = None
-sanitizer: SanitizationEngine = None
-action_validator: ActionValidator = None
+sanitizer: SanitizationEngine = SanitizationEngine()
+action_validator: ActionValidator = ActionValidator()
 action_executor: ActionExecutor = None
 current_sanitized_state: SanitizedPageState = None
 extension_bridge = ExtensionBridge()
@@ -108,8 +104,6 @@ async def get_context(task: str, session_id: str | None = None):
     try:
         logger.info(f"Capturing context for task: {task}")
 
-        # Prefer a recently perceived real-browser session. Its raw DOM is not
-        # exposed here; only the already sanitized state is agent-facing.
         extension_session = session_id or extension_bridge.active_session_id()
         extension_record = extension_bridge.get_session(extension_session) if extension_session else None
         sanitized_state = extension_record.state if extension_record else None
@@ -150,7 +144,6 @@ async def perform_action(action: AgentAction):
     try:
         session_id = action.session_id or extension_bridge.active_session_id()
         session = extension_bridge.get_session(session_id) if session_id else None
-        # Validate action
         if action.action != "navigate" and not session:
             try:
                 action_validator.validate(action, current_sanitized_state)
@@ -168,7 +161,6 @@ async def perform_action(action: AgentAction):
                 return ActionResult(success=False, error="Extension agents may not navigate to a new origin; activate that origin explicitly.")
             if action.action not in {"click", "fill", "submit"}:
                 return ActionResult(success=False, error="Action is not supported by the extension execution policy.")
-            # Resolve sensitive values exclusively inside the trusted backend.
             resolved_value = action.value
             if action.value_token and action.value_token.startswith("["):
                 resolved_value = value_store.get_value(action.value_token, session_id)
@@ -184,14 +176,11 @@ async def perform_action(action: AgentAction):
             logger.info("Queued validated action for local Chrome extension")
             return ActionResult(success=True, new_state=current_sanitized_state)
 
-        # Existing Playwright execution path remains unchanged.
         await action_executor.execute(action)
         logger.info(f"Action {action.action} executed successfully")
 
-        # Wait for page to stabilize
         await asyncio.sleep(1.0)
 
-        # Capture new state
         raw_state = await capture_service.capture_state()
         sanitized_state = sanitizer.sanitize(raw_state)
         current_sanitized_state = sanitized_state
@@ -222,7 +211,6 @@ async def receive_browser_perception(request: BrowserPerceptionRequest):
         sanitized_state = sanitizer.sanitize(request.page, scope_id=request.session_id)
         extension_bridge.save_state(request.session_id, sanitized_state)
         current_sanitized_state = sanitized_state
-        # Never log request.page: it contains the raw values by design.
         logger.info("Received and sanitized extension page state (%d elements)",
                     len(sanitized_state.elements))
         return sanitized_state

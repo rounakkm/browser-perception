@@ -20,7 +20,6 @@ class CaptureService:
         title = await self.browser.get_title()
         viewport = await self.browser.get_viewport()
 
-        # Capture screenshot
         screenshot_path = None
         try:
             settings.ensure_directories()
@@ -34,7 +33,6 @@ class CaptureService:
             logger.warning(f"Failed to capture screenshot: {e}")
             screenshot_path = None
 
-        # Extract DOM elements
         try:
             raw_dom_elements = await self.browser.extract_dom_elements()
             logger.debug(f"Extracted {len(raw_dom_elements)} DOM elements")
@@ -42,7 +40,6 @@ class CaptureService:
             logger.error(f"Failed to extract DOM elements: {e}")
             raw_dom_elements = []
 
-        # Perceive elements (integrate OCR, vision, etc.)
         try:
             perceived_elements = self.perception.perceive(raw_dom_elements, screenshot_path)
         except Exception as e:

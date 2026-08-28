@@ -8,36 +8,60 @@ API_URL = "http://127.0.0.1:8000"
 
 
 async def main():
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.post(f"{API_URL}/agent/context?task=Update my profile using my saved information")
-        response.raise_for_status()
-        context = response.json()
-        session_id = context.get("session_id")
-        page_revision = context.get("page_revision")
-        if not session_id or page_revision is None:
-            raise RuntimeError("No extension page is active. Activate a supported page from the extension first.")
-        PrivacyMonitor.render_perception_view(context["page"])
-        agent = SavedProfileMockAgent()
-        # Rehydrate through Pydantic at the boundary; no raw browser data enters here.
-        from backend.models.domain import SanitizedPageState
-        state = SanitizedPageState.model_validate(context["page"])
-        while action := agent.next_action(state):
-            action.session_id = session_id
-            action.page_revision = page_revision
-            print(f"Agent: {action.action.upper()}({action.element_id}, {action.value_token or action.value or ''})")
-            result = await client.post(f"{API_URL}/agent/action", json=action.model_dump(exclude_none=True))
-            result.raise_for_status()
-            await asyncio.sleep(0.6)
-            # The extension reports the DOM after every action. Refresh the
-            # sanitized context so the next action is bound to that revision.
-            refreshed = await client.post(
-                f"{API_URL}/agent/context?task=Update my profile using my saved information&session_id={session_id}"
-            )
-            refreshed.raise_for_status()
-            context = refreshed.json()
-            page_revision = context["page_revision"]
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.post(f"{API_URL}/agent/context?task=Update my profile using my saved information")
+                response.raise_for_status()
+            except httpx.ConnectError:
+                print(f"\n[ERROR]: Could not connect to FastAPI Gateway at {API_URL}.")
+                print("\nPlease ensure the gateway backend is running first. Command to start:")
+                print("  PYTHONPATH=. .venv/bin/python -m uvicorn backend.api.gateway:app --host 127.0.0.1 --port 8000\n")
+                return
+
+            context = response.json()
+            session_id = context.get("session_id")
+            page_revision = context.get("page_revision")
+            if not session_id or page_revision is None:
+                print("\n[NOTICE]: No active Chrome extension session found.")
+                print("\nPlease complete these setup steps:")
+                print("  1. Start backend gateway on port 8000")
+                print("  2. Start test web app: PYTHONPATH=. .venv/bin/python -m uvicorn backend.demo.webapp.app:app --host 127.0.0.1 --port 8080")
+                print("  3. Open Chrome to http://127.0.0.1:8080/profile with the extension enabled.")
+                print("  4. Re-run this script.\n")
+                return
+
+            import os
+            from backend.agent_gateway.llm_agent import LLMBrowserAgent
+            from backend.agent_gateway.llm_provider import MockLLMProvider
+            task_desc = "Update my profile using my saved information"
+            if os.getenv("GEMINI_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY"):
+                print("[Agent Mode]: Initializing Real LLM Browser Agent...")
+                agent = LLMBrowserAgent(task=task_desc)
+            else:
+                print("[Agent Mode]: No API key detected. Using LLMBrowserAgent with MockLLMProvider.")
+                print("  (To run with a live LLM, export GEMINI_API_KEY or OPENAI_API_KEY)\n")
+                agent = SavedProfileMockAgent()
+
+            from backend.models.domain import SanitizedPageState
             state = SanitizedPageState.model_validate(context["page"])
-        print("Actions queued for the local Chrome extension. Watch the browser window.")
+            while action := agent.next_action(state):
+                action.session_id = session_id
+                action.page_revision = page_revision
+                print(f"Agent Action -> {action.action.upper()}(element_id='{action.element_id}', value_token/value='{action.value_token or action.value or ''}')")
+                result = await client.post(f"{API_URL}/agent/action", json=action.model_dump(exclude_none=True))
+                result.raise_for_status()
+                await asyncio.sleep(0.6)
+                refreshed = await client.post(
+                    f"{API_URL}/agent/context?task=Update my profile using my saved information&session_id={session_id}"
+                )
+                refreshed.raise_for_status()
+                context = refreshed.json()
+                page_revision = context["page_revision"]
+                state = SanitizedPageState.model_validate(context["page"])
+            print("\n[SUCCESS]: Actions queued for Chrome extension. Watch the real browser tab.")
+    except Exception as e:
+        print(f"\n[ERROR]: Unexpected error running Chrome agent: {e}")
 
 
 if __name__ == "__main__":
