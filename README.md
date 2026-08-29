@@ -1,4 +1,4 @@
-# Browser Perception - SIH 2026
+# Browser Perception
 
 A privacy-preserving visual perception system for intelligent browser automation. This backend implements secure, on-device perception with multi-modal PII detection and sanitization.
 

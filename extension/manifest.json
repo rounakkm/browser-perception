@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Browser Perception Local Bridge",
+  "version": "0.1.0",
+  "description": "Sends local page perception to Browser Perception and executes validated local actions.",
+  "permissions": ["tabs", "activeTab", "scripting"],
+  "host_permissions": ["http://127.0.0.1:8000/*", "http://localhost:8000/*"],
+  "optional_host_permissions": ["https://*/*"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_title": "Activate Browser Perception on this site"},
+  "content_scripts": [{"matches": ["http://127.0.0.1/*", "http://localhost/*", "file:///*"], "js": ["policy.js", "content.js"], "run_at": "document_idle"}]
+}

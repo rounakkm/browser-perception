@@ -53,17 +53,44 @@ class SanitizedPageState(BaseModel):
 class AgentContext(BaseModel):
     task: str
     page: SanitizedPageState
+    session_id: Optional[str] = None
+    page_revision: Optional[int] = None
 
 class AgentAction(BaseModel):
     action: str # "click", "fill", "scroll", "navigate", "submit"
     element_id: Optional[str] = None
+    # Plain values are only valid for non-sensitive fields.  value_token is the
+    # only agent-visible reference to a sensitive value.
+    value: Optional[str] = None
     value_token: Optional[str] = None
     url: Optional[str] = None # For navigation
+    session_id: Optional[str] = None
+    page_revision: Optional[int] = None
 
 class ActionResult(BaseModel):
     success: bool
     error: Optional[str] = None
     new_state: Optional[SanitizedPageState] = None
+
+class BrowserPerceptionRequest(BaseModel):
+    """Raw browser data accepted only from the local extension boundary."""
+    session_id: str
+    page: PageState
+
+class BrowserActionResult(BaseModel):
+    session_id: str
+    action_id: str
+    success: bool
+    error: Optional[str] = None
+
+class ExtensionAction(BaseModel):
+    """Action sent from the trusted backend to the extension, never the agent."""
+    action_id: str
+    action: str
+    element_id: Optional[str] = None
+    value: Optional[str] = None
+    url: Optional[str] = None
+
 
 class ProcessingMetrics(BaseModel):
     capture_ms: float = 0
