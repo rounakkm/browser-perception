@@ -120,8 +120,15 @@ export default function LogsPage() {
             </button>
 
             <button
-              onClick={() => mutate({ logs: [] }, false)}
-              className="flex items-center gap-1 h-7.5 px-2.5 border border-[#e2e8f0] rounded bg-[#ffffff] hover:bg-[#f8fafc] text-[#475569] hover:text-[#991b1b] transition-colors text-[12px] cursor-pointer"
+              onClick={async () => {
+                mutate({ logs: [] }, false);
+                try {
+                  await fetch("http://localhost:8000/dashboard/logs/clear", { method: "POST" });
+                } catch (e) {
+                  console.error("Failed to clear backend logs:", e);
+                }
+              }}
+              className="flex items-center gap-1.5 h-7.5 px-2.5 border border-[#e2e8f0] rounded bg-[#ffffff] hover:bg-[#f8fafc] text-[#475569] hover:text-[#991b1b] transition-colors text-[12px] cursor-pointer"
             >
               <Trash2 size={13} />
               <span>Clear</span>

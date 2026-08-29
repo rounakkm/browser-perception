@@ -53,6 +53,20 @@ async def wait_for_server(url: str, timeout: int = 30) -> bool:
 
 
 async def main():
+    import glob
+    # Clean previous screenshots and reset perception log for clean session
+    for img in glob.glob("screenshots/*.png"):
+        try:
+            os.remove(img)
+        except Exception:
+            pass
+    if os.path.exists("logs/perception.log"):
+        try:
+            with open("logs/perception.log", "w", encoding="utf-8") as f:
+                f.write("")
+        except Exception:
+            pass
+
     setup_logging()
 
     # Check gateway is running first

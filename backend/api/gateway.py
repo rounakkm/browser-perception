@@ -389,6 +389,45 @@ async def get_dashboard_logs(limit: int = 500):
         return {"logs": [f"Error reading logs: {str(e)}"]}
 
 
+@app.delete("/dashboard/logs")
+@app.post("/dashboard/logs/clear")
+async def clear_dashboard_logs():
+    """Clear backend perception log file."""
+    log_file = "logs/perception.log"
+    try:
+        if os.path.exists(log_file):
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write("")
+        return {"ok": True, "message": "Logs cleared"}
+    except Exception as e:
+        logger.error(f"Error clearing logs: {e}")
+        return {"ok": False, "error": str(e)}
+
+
+@app.post("/dashboard/reset")
+async def reset_dashboard_session():
+    """Reset session: clear logs, state, and screenshot cache."""
+    global latest_dashboard_state
+    latest_dashboard_state = None
+    try:
+        # Clear log file
+        log_file = "logs/perception.log"
+        if os.path.exists(log_file):
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write("")
+        # Remove cached screenshots
+        import glob
+        for f in glob.glob("screenshots/*.png"):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+        return {"ok": True, "message": "Dashboard session reset"}
+    except Exception as e:
+        logger.error(f"Error resetting session: {e}")
+        return {"ok": False, "error": str(e)}
+
+
 @app.post("/capture")
 async def trigger_capture(url: str | None = None):
     """

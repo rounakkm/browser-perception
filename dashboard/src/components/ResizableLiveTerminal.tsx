@@ -213,7 +213,14 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
 
           {/* Clear */}
           <button
-            onClick={() => mutateLogs({ logs: [] }, false)}
+            onClick={async () => {
+              mutateLogs({ logs: [] }, false);
+              try {
+                await fetch("http://localhost:8000/dashboard/logs/clear", { method: "POST" });
+              } catch (e) {
+                console.error("Failed to clear backend logs:", e);
+              }
+            }}
             className="p-1 text-[#64748b] hover:text-[#991b1b] hover:bg-[#f1f5f9] rounded transition-colors cursor-pointer"
             title="Clear Terminal"
           >
