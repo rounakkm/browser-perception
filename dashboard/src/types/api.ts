@@ -49,3 +49,17 @@ export interface DashboardState {
   viewport: Record<string, number>;
   timestamp: number;
 }
+
+export interface InspectableElement {
+  element_id?: string;
+  type?: string;
+  role?: string;
+  label?: string;
+  value?: string;
+  text?: string;
+  text_content?: string;
+  confidence?: number;
+  bbox?: number[];
+  is_interactive?: boolean;
+  sensitive?: boolean;
+}

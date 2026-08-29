@@ -58,6 +58,31 @@ browser_lock: asyncio.Lock = asyncio.Lock()
 extension_bridge: ExtensionBridge = ExtensionBridge()
 
 
+async def _do_capture():
+    """Shared helper: capture current browser state and update global dashboard state."""
+    global current_sanitized_state, latest_dashboard_state
+    raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
+    t0 = time.time()
+    sanitized_state = sanitizer.sanitize(raw_state)
+    metrics['sanitization_ms'] = (time.time() - t0) * 1000
+    metrics['total_ms'] = sum(metrics.values())
+    current_sanitized_state = sanitized_state
+    screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
+    latest_dashboard_state = DashboardState(
+        url=raw_state.url,
+        title=raw_state.title,
+        screenshot_url=screenshot_url,
+        raw_elements=raw_state.dom_elements,
+        sanitized_elements=sanitized_state.elements,
+        ocr_results=ocr_findings,
+        vision_results=vision_boxes,
+        metrics=ProcessingMetrics(**metrics),
+        viewport=raw_state.viewport,
+        timestamp=raw_state.timestamp
+    )
+    return raw_state, sanitized_state
+
+
 @app.on_event("startup")
 async def startup_event():
     global browser, capture_service, sanitizer, action_validator, action_executor, startup_time
@@ -78,10 +103,20 @@ async def startup_event():
         action_executor = ActionExecutor(browser)
 
         await browser.start()
-        logger.info("Browser instance initialized successfully")
+        if browser._is_started:
+            logger.info("Browser instance initialized successfully")
+            # Auto-capture on startup so dashboard has live data immediately
+            try:
+                await browser.navigate("https://www.google.com")
+                await asyncio.sleep(2.0)
+                await _do_capture()
+                logger.info("Auto-capture on startup complete")
+            except Exception as cap_err:
+                logger.warning(f"Auto-capture failed (non-fatal): {cap_err}")
+        else:
+            logger.warning("Browser failed to start - server running in extension-only mode (no Playwright capture)")
     except Exception as e:
-        logger.error(f"Failed to initialize browser: {e}\n{traceback.format_exc()}")
-        raise
+        logger.error(f"Startup error (non-fatal): {e}\n{traceback.format_exc()}")
 
 
 @app.on_event("shutdown")
@@ -125,7 +160,7 @@ async def get_context(task: str, session_id: str | None = None):
     """
     Captures the current browser state, sanitizes it, and returns the context to the agent.
     """
-    global current_sanitized_state
+    global current_sanitized_state, latest_dashboard_state
 
     try:
         logger.info(f"Capturing context for task: {task}")
@@ -135,12 +170,34 @@ async def get_context(task: str, session_id: str | None = None):
         sanitized_state = extension_record.state if extension_record else None
         if session_id and not extension_record:
             raise HTTPException(status_code=404, detail="No sanitized state for requested browser session")
-        if sanitized_state is None:
-            raw_state, _, _, _ = await capture_service.capture_state()
-            logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
-            sanitized_state = sanitizer.sanitize(raw_state)
-        current_sanitized_state = sanitized_state
 
+        if sanitized_state is None:
+            # Fall back to Playwright capture
+            async with browser_lock:
+                raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
+                logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
+
+                t0 = time.time()
+                sanitized_state = sanitizer.sanitize(raw_state)
+                metrics['sanitization_ms'] = (time.time() - t0) * 1000
+                metrics['total_ms'] = sum(metrics.values())
+
+                # Update dashboard state so the UI shows live data
+                screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
+                latest_dashboard_state = DashboardState(
+                    url=raw_state.url,
+                    title=raw_state.title,
+                    screenshot_url=screenshot_url,
+                    raw_elements=raw_state.dom_elements,
+                    sanitized_elements=sanitized_state.elements,
+                    ocr_results=ocr_findings,
+                    vision_results=vision_boxes,
+                    metrics=ProcessingMetrics(**metrics),
+                    viewport=raw_state.viewport,
+                    timestamp=raw_state.timestamp
+                )
+
+        current_sanitized_state = sanitized_state
         logger.info(f"Context captured successfully - URL: {sanitized_state.url}")
 
         return AgentContext(
@@ -300,7 +357,19 @@ async def browser_action_result(result: BrowserActionResult):
 async def get_dashboard_state():
     """Endpoint for the UI to retrieve the latest full perception state."""
     if not latest_dashboard_state:
-        raise HTTPException(status_code=404, detail="No capture state available yet")
+        # Return a default empty state so the dashboard shows ONLINE instead of erroring
+        return DashboardState(
+            url="",
+            title="Waiting for first capture...",
+            screenshot_url=None,
+            raw_elements=[],
+            sanitized_elements=[],
+            ocr_results=[],
+            vision_results=[],
+            metrics=ProcessingMetrics(),
+            viewport={"width": 0, "height": 0},
+            timestamp=time.time()
+        )
     return latest_dashboard_state
 
 
@@ -318,3 +387,26 @@ async def get_dashboard_logs(limit: int = 500):
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return {"logs": [f"Error reading logs: {str(e)}"]}
+
+
+@app.post("/capture")
+async def trigger_capture(url: str | None = None):
+    """
+    Dashboard button: optionally navigate to a URL, take a screenshot, update dashboard state.
+    """
+    if not browser or not browser._is_started:
+        raise HTTPException(status_code=503, detail="Browser not available. Restart the server.")
+    try:
+        async with browser_lock:
+            if url:
+                await browser.navigate(url)
+                logger.info(f"Navigated to: {url}")
+                await asyncio.sleep(1.5)  # Let page settle/render
+            raw_state, sanitized_state = await _do_capture()
+            logger.info(f"Capture complete — URL: {raw_state.url}, elements: {len(raw_state.dom_elements)}")
+            return {"ok": True, "url": raw_state.url, "elements": len(raw_state.dom_elements)}
+    except Exception as e:
+        logger.error(f"Capture failed: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
