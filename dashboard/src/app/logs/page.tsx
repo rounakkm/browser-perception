@@ -10,6 +10,7 @@ import {
   Pause,
   ArrowDown,
   Terminal,
+  RefreshCw,
 } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -36,7 +37,6 @@ export default function LogsPage() {
   }, [data, autoScroll]);
 
   const rawLogs = data?.logs || [];
-
   const parsedLogs = rawLogs.map((line, idx) => parseLogLine(line, idx));
 
   const filteredLogs = parsedLogs.filter((log) => {
@@ -60,7 +60,7 @@ export default function LogsPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#f8fafc] overflow-hidden select-none">
-      <TopAppBar title="Perception & Privacy Logs" />
+      <TopAppBar title="System Perception & Privacy Logs" />
 
       <main className="flex-1 flex flex-col p-4 md:p-5 gap-3 overflow-hidden">
         {/* Controls Toolbar */}
@@ -111,11 +111,20 @@ export default function LogsPage() {
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <button
+              onClick={() => mutate()}
+              className="flex items-center gap-1 h-7.5 px-2.5 border border-[#e2e8f0] rounded bg-[#ffffff] hover:bg-[#f8fafc] text-[#475569] hover:text-[#2563eb] transition-colors text-[12px] cursor-pointer"
+              title="Refresh Log Stream"
+            >
+              <RefreshCw size={13} />
+              <span>Refresh</span>
+            </button>
+
+            <button
               onClick={() => mutate({ logs: [] }, false)}
-              className="flex items-center gap-1.5 h-7.5 px-2.5 border border-[#e2e8f0] rounded bg-[#ffffff] hover:bg-[#f8fafc] text-[#475569] hover:text-[#991b1b] transition-colors text-[12px] cursor-pointer"
+              className="flex items-center gap-1 h-7.5 px-2.5 border border-[#e2e8f0] rounded bg-[#ffffff] hover:bg-[#f8fafc] text-[#475569] hover:text-[#991b1b] transition-colors text-[12px] cursor-pointer"
             >
               <Trash2 size={13} />
-              Clear
+              <span>Clear</span>
             </button>
 
             <div className="flex items-center bg-[#ffffff] border border-[#e2e8f0] rounded overflow-hidden">
@@ -128,7 +137,7 @@ export default function LogsPage() {
                 }`}
               >
                 {isPaused ? <Play size={13} /> : <Pause size={13} />}
-                {isPaused ? "Resume" : "Pause"}
+                <span>{isPaused ? "Resume" : "Pause"}</span>
               </button>
 
               <button
@@ -140,95 +149,88 @@ export default function LogsPage() {
                 }`}
               >
                 <ArrowDown size={13} />
-                Auto-scroll
+                <span>Auto-scroll</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Terminal Window Table with Full Monospace Whitespace Preservation */}
+        {/* Full Terminal Stream Window with Whitespace-Preserved ASCII Table Layout */}
         <div className="flex-1 bg-[#ffffff] border border-[#e2e8f0] rounded-md flex flex-col overflow-hidden shadow-2xs">
-          <div ref={logContainerRef} className="overflow-auto flex-1 p-2.5">
-            <table className="w-full text-left border-collapse font-mono text-[11.5px]">
-              <thead>
-                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px] font-bold sticky top-0 z-10">
-                  <th className="py-1.5 px-2.5 w-32 shrink-0 whitespace-nowrap">TIMESTAMP</th>
-                  <th className="py-1.5 px-2 w-18 shrink-0">LEVEL</th>
-                  <th className="py-1.5 px-2.5 w-36 shrink-0">COMPONENT</th>
-                  <th className="py-1.5 px-2.5">MESSAGE / PERCEPTION VIEW</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f1f5f9] text-[#0f172a]">
-                {filteredLogs.map((log) => {
-                  const isError = log.level.includes("ERROR");
-                  const isWarn = log.level.includes("WARN");
-                  const isInfo = log.level.includes("INFO");
+          <div
+            ref={logContainerRef}
+            className="flex-1 overflow-auto p-3 font-mono text-[11.5px] leading-relaxed divide-y divide-[#f1f5f9]"
+          >
+            {!filteredLogs.length ? (
+              <div className="text-center py-16 text-[#64748b]">
+                <div className="flex flex-col items-center gap-2">
+                  <Terminal size={32} className="text-[#cbd5e1]" />
+                  <span className="text-[13px] font-semibold text-[#0f172a]">
+                    No Logs Available
+                  </span>
+                  <span className="text-[11.5px] text-[#64748b]">
+                    Waiting for log stream from backend gateway...
+                  </span>
+                </div>
+              </div>
+            ) : (
+              filteredLogs.map((log, idx) => {
+                const isError = log.level.includes("ERROR");
+                const isWarn = log.level.includes("WARN");
 
-                  const isTableHeader =
-                    log.message.includes("ELEMENT ID") ||
-                    log.message.includes("AGENT PERCEPTION VIEW") ||
-                    log.message.includes("PRIVACY DEMONSTRATION");
+                let badgeColor = "bg-[#eff6ff] text-[#1e40af] border border-[#bfdbfe]";
 
-                  const isDivider =
-                    log.message.startsWith("---") ||
-                    log.message.startsWith("===") ||
-                    log.message.includes("==================================================");
+                if (isError) {
+                  badgeColor = "bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]";
+                } else if (isWarn) {
+                  badgeColor = "bg-[#fffbeb] text-[#92400e] border border-[#fde68a]";
+                }
 
-                  const badgeStyle = isError
-                    ? "bg-[#fef2f2] text-[#991b1b] border-[#fecaca]"
-                    : isWarn
-                    ? "bg-[#fffbeb] text-[#92400e] border-[#fde68a]"
-                    : isInfo
-                    ? "bg-[#eff6ff] text-[#1e40af] border-[#bfdbfe]"
-                    : "bg-[#f1f5f9] text-[#475569] border-[#e2e8f0]";
+                const isTableHeader =
+                  log.message.includes("ELEMENT ID") ||
+                  log.message.includes("AGENT PERCEPTION VIEW") ||
+                  log.message.includes("PRIVACY DEMONSTRATION");
 
-                  return (
-                    <tr
-                      key={log.id}
-                      className={`hover:bg-[#f8fafc] transition-colors ${
-                        isTableHeader ? "bg-[#eff6ff]/40 font-bold" : ""
-                      }`}
-                    >
-                      <td className="py-1 px-2.5 text-[#64748b] font-mono whitespace-nowrap text-[10.5px] align-top">
-                        {log.timestamp}
-                      </td>
-                      <td className="py-1 px-2 align-top">
-                        <span
-                          className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded border inline-block ${badgeStyle}`}
-                        >
-                          {log.level}
-                        </span>
-                      </td>
-                      <td className="py-1 px-2.5 text-[#64748b] font-medium whitespace-nowrap align-top text-[10.5px]">
-                        {log.component}
-                      </td>
-                      <td className="py-1 px-2.5 align-top">
-                        {isDivider ? (
-                          <div className="text-[#94a3b8] font-mono whitespace-pre text-[10.5px]">
-                            {log.message}
-                          </div>
-                        ) : (
-                          <div className="font-mono whitespace-pre text-[11.5px] leading-relaxed text-[#0f172a]">
-                            {formatLogMessage(log.message)}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                const isDivider =
+                  log.message.startsWith("---") ||
+                  log.message.startsWith("===") ||
+                  log.message.includes("==================================================");
 
-                {!filteredLogs.length && (
-                  <tr>
-                    <td colSpan={4} className="text-center py-12 text-[#64748b] italic">
-                      <div className="flex flex-col items-center gap-1.5">
-                        <Terminal size={28} className="text-[#cbd5e1]" />
-                        <span className="text-[12px]">No logs matching the current criteria.</span>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-start gap-2.5 py-1 px-1.5 hover:bg-[#f8fafc] transition-colors ${
+                      isTableHeader ? "bg-[#eff6ff]/40 font-bold" : ""
+                    }`}
+                  >
+                    <span className="text-[#64748b] text-[10.5px] shrink-0 font-mono">
+                      {log.timestamp}
+                    </span>
+                    <span className={`px-1.5 py-0.2 text-[9px] font-bold rounded shrink-0 ${badgeColor}`}>
+                      {log.level}
+                    </span>
+                    <span className="text-[#64748b] text-[10.5px] font-medium shrink-0 font-mono">
+                      [{log.component}]
+                    </span>
+                    <div className="whitespace-pre font-mono text-[11.5px] text-[#0f172a]">
+                      {isDivider ? (
+                        <span className="text-[#94a3b8]">{log.message}</span>
+                      ) : (
+                        formatLogMessage(log.message)
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Stream Footer Info */}
+          <div className="px-3.5 py-1.5 border-t border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-between text-[#64748b] text-[11px]">
+            <span>
+              Showing <strong className="text-[#0f172a]">{filteredLogs.length}</strong> log entries
+            </span>
+            <span className="font-mono text-[10.5px]">logs/perception.log</span>
           </div>
         </div>
       </main>
@@ -237,8 +239,10 @@ export default function LogsPage() {
 }
 
 function parseLogLine(line: string, idx: number) {
+  const trimmed = line.trim();
+
   // Format 1: 2026-08-29 17:13:15 - privacy_monitor - INFO - message
-  const matchHyphen = line.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+-\s+([\w\.\-]+)\s+-\s+(\w+)\s+-\s+([\s\S]*)$/);
+  const matchHyphen = trimmed.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+-\s+([\w\.\-]+)\s+-\s+(\w+)\s+-\s+([\s\S]*)$/);
   if (matchHyphen) {
     return {
       id: idx,
@@ -251,7 +255,7 @@ function parseLogLine(line: string, idx: number) {
   }
 
   // Format 2: 17:58:16 [INFO] message
-  const matchBracket = line.match(/^(\d{2}:\d{2}:\d{2})\s+\[(\w+)\]\s+([\s\S]*)$/);
+  const matchBracket = trimmed.match(/^(\d{2}:\d{2}:\d{2})\s+\[(\w+)\]\s*([\s\S]*)$/);
   if (matchBracket) {
     const timestamp = matchBracket[1];
     const level = matchBracket[2];
@@ -295,7 +299,7 @@ function parseLogLine(line: string, idx: number) {
     };
   }
 
-  // Fallback for raw lines without timestamp
+  // Fallback for raw lines
   const isError = line.includes("ERROR") || line.includes("Traceback") || line.includes("exception");
   const isWarn = line.includes("WARNING") || line.includes("WARN");
   let component = "gateway";
@@ -320,7 +324,6 @@ function parseLogLine(line: string, idx: number) {
 function formatLogMessage(text: string) {
   if (!text) return null;
 
-  // Highlight table rows with sensitivity badges & tokens
   if (text.includes("|")) {
     const segments = text.split(/(\[.*?\]|SENSITIVE|NORMAL)/g);
     return segments.map((part, i) => {
@@ -349,7 +352,6 @@ function formatLogMessage(text: string) {
     });
   }
 
-  // Highlight tokens like [ACCOUNT_NUMBER_1], [EMAIL_2], [SUCCESS], etc.
   if (text.includes("[")) {
     const segments = text.split(/(\[.*?\])/g);
     return segments.map((part, i) => {
