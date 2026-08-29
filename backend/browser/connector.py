@@ -1,4 +1,13 @@
+import sys
 import asyncio
+
+# Must be set before ANY asyncio event loop is created.
+# Uvicorn's reloader spawns a fresh subprocess on Windows which defaults to
+# SelectorEventLoop – that loop does NOT support subprocesses (Playwright needs
+# create_subprocess_exec). Forcing ProactorEventLoop here, at module-import
+# time, fixes the issue regardless of how the process was started.
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 from typing import List, Dict, Optional
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext
 from backend.models.domain import DOMElement
@@ -22,6 +31,8 @@ class BrowserConnector:
 
     async def start(self, headless: Optional[bool] = None):
         """Initialize the browser using async Playwright."""
+        if self._is_started:
+            return
         if headless is None:
             headless = settings.BROWSER_HEADLESS
 
@@ -39,7 +50,8 @@ class BrowserConnector:
         except Exception as e:
             logger.error(f"Failed to start browser: {e}")
             self._is_started = False
-            raise RuntimeError(f"Failed to start browser: {e}")
+            # Don't re-raise – let the server start without a browser.
+            # Browser will be lazily re-attempted on first capture request.
 
     async def stop(self):
         """Stop the browser."""

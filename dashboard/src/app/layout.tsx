@@ -1,21 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: "Browser Perception Dashboard",
-  description: "Visual inspection and debugging dashboard",
+  description: "Developer inspection dashboard for on-device visual perception",
 };
 
 export default function RootLayout({
@@ -24,15 +13,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="h-full flex overflow-hidden bg-white text-gray-900">
+    <html lang="en" className="h-full antialiased light">
+      <body className="h-full flex overflow-hidden bg-[#faf8ff] text-[#191b23]">
         <Sidebar />
-        <main className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
           {children}
-        </main>
+        </div>
       </body>
     </html>
   );
