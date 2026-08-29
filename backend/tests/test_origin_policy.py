@@ -9,7 +9,6 @@ from backend.sanitization.engine import SanitizationEngine
 from backend.security.origin_policy import origin_decision
 from backend.security.store import value_store
 
-
 def page(url: str, value: str = "45892310452") -> PageState:
     return PageState(url=url, title="Safe page", viewport={"width": 800, "height": 600}, timestamp=1.0, dom_elements=[
         DOMElement(element_id="account", type="input", label="Account Number", value=value, is_interactive=True),
@@ -17,18 +16,15 @@ def page(url: str, value: str = "45892310452") -> PageState:
         DOMElement(element_id="save", type="button", label="Save", text="Save", is_interactive=True),
     ])
 
-
 def test_origin_policy_preserves_local_demo_and_allows_harmless_https():
     assert origin_decision("http://127.0.0.1:8080/profile")[0]
     assert origin_decision("https://example.com/forms")[0]
-
 
 @pytest.mark.parametrize("url", [
     "https://bank.example.com/", "https://example.com/login", "https://wallet.example.org/", "http://example.com/",
 ])
 def test_high_risk_or_non_https_origins_are_rejected(url):
     assert not origin_decision(url)[0]
-
 
 def test_session_scoped_tokens_and_page_revisions_prevent_cross_page_actions():
     value_store.clear()
@@ -46,7 +42,6 @@ def test_session_scoped_tokens_and_page_revisions_prevent_cross_page_actions():
     assert bridge.save_state("one", first).page_revision == 1
     assert bridge.save_state("one", first).page_revision == 2
 
-
 def test_extension_declares_optional_per_site_https_permission_and_no_script_execution():
     root = Path(__file__).resolve().parents[2]
     manifest = (root / "extension" / "manifest.json").read_text()
@@ -57,7 +52,6 @@ def test_extension_declares_optional_per_site_https_permission_and_no_script_exe
     assert "eval(" not in content
     assert "new Function" not in content
     assert '["click", "fill", "submit"].includes(action.action)' in content
-
 
 @pytest.mark.asyncio
 async def test_gateway_rejects_stale_and_unsupported_extension_actions(monkeypatch):

@@ -1,8 +1,3 @@
-"""In-memory local bridge between a Manifest V3 extension and the gateway.
-
-Raw page state and resolved sensitive values never leave this process.  The
-extension polls for actions so no externally reachable callback is required.
-"""
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Deque, Dict, Optional
@@ -10,12 +5,10 @@ from uuid import uuid4
 
 from backend.models.domain import ExtensionAction, SanitizedPageState
 
-
 @dataclass
 class BrowserSession:
     state: SanitizedPageState
     page_revision: int
-
 
 class ExtensionBridge:
     def __init__(self):

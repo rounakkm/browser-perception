@@ -1,4 +1,3 @@
-"""Conservative policy for extension-originated browser sessions."""
 from urllib.parse import urlparse
 
 HIGH_RISK_TERMS = {
@@ -8,13 +7,7 @@ HIGH_RISK_TERMS = {
 }
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 
-
 def origin_decision(url: str) -> tuple[bool, str]:
-    """Return whether an extension page may join the agent workflow.
-
-    HTTPS is allowed only when it does not match the conservative high-risk
-    classifier.  Local demo pages remain explicitly supported.
-    """
     parsed = urlparse(url)
     host = (parsed.hostname or "").lower()
     if parsed.scheme == "http" and host in LOCAL_HOSTS:

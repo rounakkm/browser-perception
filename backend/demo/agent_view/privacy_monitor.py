@@ -4,10 +4,6 @@ from backend.config.logging import get_logger
 logger = get_logger("privacy_monitor")
 
 class PrivacyMonitor:
-    """
-    Renders terminal-based split view demonstrating real browser state vs. agent perception view,
-    and logs privacy metrics proving 0 secrets cross the boundary.
-    """
     @staticmethod
     def render_perception_view(state):
         if isinstance(state, dict):
@@ -24,10 +20,10 @@ class PrivacyMonitor:
         logger.info("="*85)
         logger.info(f"{'ELEMENT ID':<18} | {'TYPE':<8} | {'LABEL':<22} | {'SENSITIVITY':<12} | {'AGENT VALUE / TEXT':<18}")
         logger.info("-" * 85)
-        
+
         sensitive_count = 0
         normal_count = 0
-        
+
         for elem in elements:
             if isinstance(elem, dict):
                 is_interactive = elem.get("is_interactive", False)
@@ -46,15 +42,15 @@ class PrivacyMonitor:
 
             if not is_interactive and not sensitive:
                 continue
-                
+
             sens_str = " SENSITIVE" if sensitive else " NORMAL"
             if sensitive:
                 sensitive_count += 1
             else:
                 normal_count += 1
-                
+
             logger.info(f"{element_id:<18} | {elem_type:<8} | {label[:22]:<22} | {sens_str:<12} | {val_display:<18}")
-            
+
         logger.info("-" * 85)
         logger.info(f" Summary: {sensitive_count} Sensitive Fields Redacted | {normal_count} Normal Elements Exposed")
         logger.info("="*85 + "\n")

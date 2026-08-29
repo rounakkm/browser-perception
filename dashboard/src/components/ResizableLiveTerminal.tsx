@@ -38,14 +38,12 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll to bottom
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logsData, autoScroll, activeTab]);
 
-  // Dragging logic for resizing
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -119,7 +117,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
         isDragging ? "select-none cursor-ns-resize" : ""
       }`}
     >
-      {/* Top Subtle Resize Handle */}
+      {}
       <div
         onMouseDown={handleMouseDown}
         onDoubleClick={toggleMaximize}
@@ -127,9 +125,9 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
         title="Drag up or down to resize terminal"
       />
 
-      {/* Terminal Tab Bar / Header */}
+      {}
       <div className="h-8.5 bg-[#f8fafc] border-b border-[#e2e8f0] flex items-center justify-between px-3 text-[11.5px] shrink-0">
-        {/* Tabs */}
+        {}
         <div className="flex items-center gap-1">
           <button
             onClick={() => {
@@ -175,9 +173,9 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
           </button>
         </div>
 
-        {/* Right Action Controls */}
+        {}
         <div className="flex items-center gap-1.5">
-          {/* Quick Filter */}
+          {}
           {!isCollapsed && (
             <div className="relative flex items-center">
               <Filter size={11} className="absolute left-2 text-[#94a3b8]" />
@@ -191,7 +189,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
             </div>
           )}
 
-          {/* Auto-scroll */}
+          {}
           <button
             onClick={() => setAutoScroll(!autoScroll)}
             className={`p-1 rounded transition-colors cursor-pointer ${
@@ -202,7 +200,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
             <ArrowDown size={13} />
           </button>
 
-          {/* Refresh */}
+          {}
           <button
             onClick={() => mutateLogs()}
             className="p-1 text-[#64748b] hover:text-[#2563eb] hover:bg-[#f1f5f9] rounded transition-colors cursor-pointer"
@@ -211,7 +209,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
             <RefreshCw size={12} />
           </button>
 
-          {/* Clear */}
+          {}
           <button
             onClick={async () => {
               mutateLogs({ logs: [] }, false);
@@ -229,7 +227,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
 
           <div className="h-3.5 w-px bg-[#e2e8f0] mx-0.5" />
 
-          {/* Maximize / Restore */}
+          {}
           <button
             onClick={toggleMaximize}
             className="p-1 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] rounded transition-colors cursor-pointer"
@@ -238,7 +236,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
             {isMaximized ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
           </button>
 
-          {/* Collapse / Expand */}
+          {}
           <button
             onClick={toggleCollapse}
             className="p-1 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] rounded transition-colors cursor-pointer"
@@ -249,7 +247,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
         </div>
       </div>
 
-      {/* Terminal Body with Monospace Whitespace Preservation */}
+      {}
       {!isCollapsed && (
         <div
           ref={scrollRef}
@@ -327,7 +325,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
           {activeTab === "debug" && (
             <div className="space-y-1 text-[11px] text-[#64748b] p-1">
               <div>[Debug] Event loop: WindowsProactorEventLoop</div>
-              <div>[Debug] HTTP Gateway: http://127.0.0.1:8000</div>
+              <div>[Debug] HTTP Gateway: http:
               <div>[Debug] Polling interval: 1500ms</div>
               <div>[Debug] Viewport: 1920x1080 CSS pixels</div>
             </div>
@@ -339,7 +337,7 @@ export default function ResizableLiveTerminal({ initialHeight = 200 }: LiveTermi
 }
 
 function parseLogLine(line: string, idx: number) {
-  // Format 1: 2026-08-29 17:13:15 - privacy_monitor - INFO - message
+
   const matchHyphen = line.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+-\s+([\w\.\-]+)\s+-\s+(\w+)\s+-\s+([\s\S]*)$/);
   if (matchHyphen) {
     return {
@@ -352,7 +350,6 @@ function parseLogLine(line: string, idx: number) {
     };
   }
 
-  // Format 2: 17:58:16 [INFO] message
   const matchBracket = line.match(/^(\d{2}:\d{2}:\d{2})\s+\[(\w+)\]\s+([\s\S]*)$/);
   if (matchBracket) {
     const timestamp = matchBracket[1];
@@ -397,7 +394,6 @@ function parseLogLine(line: string, idx: number) {
     };
   }
 
-  // Fallback for raw lines without timestamp
   const isError = line.includes("ERROR") || line.includes("Traceback") || line.includes("exception");
   const isWarn = line.includes("WARNING") || line.includes("WARN");
   let component = "gateway";

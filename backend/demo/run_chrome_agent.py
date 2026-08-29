@@ -1,4 +1,3 @@
-"""Run the mock or LLM agent against a page already open in real Chrome with the extension."""
 import asyncio
 import os
 import httpx
@@ -6,7 +5,6 @@ from backend.agent_gateway.mock_agent import SavedProfileMockAgent
 from backend.demo.agent_view.privacy_monitor import PrivacyMonitor
 
 API_URL = "http://127.0.0.1:8000"
-
 
 async def main():
     try:
@@ -56,7 +54,6 @@ async def main():
             print("\n[SUCCESS]: Actions queued for Chrome extension. Watch the real browser tab.")
     except Exception as e:
         print(f"\n[ERROR]: Unexpected error running Chrome agent: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

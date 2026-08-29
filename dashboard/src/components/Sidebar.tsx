@@ -44,7 +44,7 @@ export default function Sidebar() {
 
   return (
     <nav className="w-56 h-full bg-[#ffffff] border-r border-[#e2e8f0] flex flex-col py-3 px-3 z-20 shrink-0 select-none shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
-      {/* Brand Header */}
+      {}
       <div className="px-2 py-1 mb-4">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-[#2563eb] text-white rounded-md shadow-xs flex items-center justify-center">
@@ -59,7 +59,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation List */}
+      {}
       <div className="flex-1 overflow-y-auto no-scrollbar space-y-0.5">
         {navItems.map((item) => {
           const isActive = pathname === item.path;
@@ -84,7 +84,7 @@ export default function Sidebar() {
         })}
       </div>
 
-      {/* Footer System Health & Quick Status */}
+      {}
       <div className="mt-auto pt-3 border-t border-[#e2e8f0] space-y-2">
         <div className="px-1">
           <div
@@ -110,7 +110,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Engine Services Strip */}
+        {}
         <div className="grid grid-cols-4 gap-1 px-1">
           <div
             className="flex items-center justify-center p-1.5 text-[#64748b] hover:text-[#2563eb] hover:bg-[#f8fafc] rounded border border-transparent hover:border-[#e2e8f0] transition-colors"

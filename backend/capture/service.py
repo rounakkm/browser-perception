@@ -15,12 +15,10 @@ class CaptureService:
         self.perception = PerceptionEngine()
 
     async def capture_state(self):
-        """Capture the current page state including screenshot and DOM."""
         url = await self.browser.get_url()
         title = await self.browser.get_title()
         viewport = await self.browser.get_viewport()
 
-        # Capture screenshot
         screenshot_path = None
         capture_t0 = time.time()
         try:
@@ -36,7 +34,6 @@ class CaptureService:
             screenshot_path = None
         capture_ms = (time.time() - capture_t0) * 1000
 
-        # Extract DOM elements
         try:
             raw_dom_elements = await self.browser.extract_dom_elements()
             logger.debug(f"Extracted {len(raw_dom_elements)} DOM elements")
@@ -44,11 +41,10 @@ class CaptureService:
             logger.error(f"Failed to extract DOM elements: {e}")
             raw_dom_elements = []
 
-        # Perceive elements (integrate OCR, vision, etc.)
         ocr_findings = []
         vision_boxes = []
         metrics = {'capture_ms': capture_ms}
-        
+
         try:
             perceived_elements, ocr_findings, vision_boxes, perc_metrics = self.perception.perceive(raw_dom_elements, screenshot_path)
             metrics.update(perc_metrics)

@@ -16,7 +16,7 @@ export default function TopAppBar({
 }: TopAppBarProps) {
   return (
     <header className="h-13 bg-[#ffffff] border-b border-[#e2e8f0] flex items-center justify-between px-6 shrink-0 z-10 select-none shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-      {/* Left Search / Title */}
+      {}
       <div className="flex items-center gap-3">
         {title ? (
           <h2 className="text-[14px] font-bold text-[#0f172a] tracking-tight truncate">
@@ -37,12 +37,12 @@ export default function TopAppBar({
         )}
       </div>
 
-      {/* Center Actions */}
+      {}
       <div className="flex items-center gap-2">
         {actions}
       </div>
 
-      {/* Right Controls */}
+      {}
       <div className="flex items-center gap-1.5">
         <button
           className="relative p-1.5 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] rounded-md transition-colors cursor-pointer"

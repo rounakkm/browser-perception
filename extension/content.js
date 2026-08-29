@@ -9,7 +9,7 @@
     const explicit = el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
     const ids = (el.getAttribute("aria-labelledby") || "").split(/\s+/).filter(Boolean);
     const referenced = ids.map(id => compactText(document.getElementById(id))).filter(Boolean).join(" ");
-    // A current form value is never a label or a text fallback.
+
     return compactText(explicit) || el.getAttribute("aria-label") || referenced || compactText(el.closest("label")) || el.getAttribute("placeholder") || ((el.tagName === "BUTTON" || el.tagName === "A") ? compactText(el) : "") || el.name || el.id || null;
   };
   const elementId = (el, index) => {

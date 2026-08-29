@@ -1,35 +1,20 @@
-"""
-BM25 ranker for selecting browser elements based on agent intent.
-Operates strictly on safe, sanitized textual metadata. Never inspects raw PII.
-"""
 import math
 import re
 from typing import List, Tuple
 from backend.models.domain import SanitizedElement
 
-
 def tokenize(text: str) -> List[str]:
-    """Tokenize text into lowercase alphanumeric tokens."""
     if not text:
         return []
     return re.findall(r'\w+', text.lower())
 
-
 class BM25Ranker:
-    """
-    Okapi BM25 implementation for ranking SanitizedElement candidates
-    against a textual query/intent.
-    """
 
     def __init__(self, k1: float = 1.5, b: float = 0.75):
         self.k1 = k1
         self.b = b
 
     def _extract_safe_corpus(self, element: SanitizedElement) -> List[str]:
-        """
-        Extract only non-sensitive textual metadata from SanitizedElement.
-        DO NOT use raw sensitive values.
-        """
         safe_parts = []
         if element.label:
             safe_parts.append(element.label)
@@ -50,10 +35,6 @@ class BM25Ranker:
     def score_elements(
         self, intent: str, elements: List[SanitizedElement]
     ) -> List[Tuple[SanitizedElement, float]]:
-        """
-        Score a list of SanitizedElement candidates against an intent query using Okapi BM25.
-        Returns a list of (SanitizedElement, score) tuples sorted by score descending.
-        """
         query_tokens = tokenize(intent)
         if not query_tokens or not elements:
             return [(elem, 0.0) for elem in elements]
@@ -97,10 +78,6 @@ class BM25Ranker:
     def select_best_element(
         self, intent: str, elements: List[SanitizedElement], min_score: float = 0.001
     ) -> SanitizedElement | None:
-        """
-        Select the single best matching interactive element for the given intent.
-        Returns None if no element satisfies min_score or list is empty.
-        """
         scored = self.score_elements(intent, elements)
         if not scored:
             return None

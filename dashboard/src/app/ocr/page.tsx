@@ -57,7 +57,7 @@ export default function OCRPage() {
       <TopAppBar searchPlaceholder="Regex or keyword search within OCR history..." />
 
       <main className="flex-1 p-5 md:p-6 max-w-7xl w-full mx-auto space-y-4">
-        {/* Header & Top Actions */}
+        {}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#e2e8f0]">
           <div>
             <h2 className="text-[18px] font-bold text-[#0f172a] tracking-tight">
@@ -78,7 +78,7 @@ export default function OCRPage() {
           </div>
         </div>
 
-        {/* Toolbar */}
+        {}
         <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-2.5 flex flex-wrap gap-3 items-center justify-between shadow-2xs">
           <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
@@ -107,7 +107,7 @@ export default function OCRPage() {
           </div>
         </div>
 
-        {/* Core Data Table */}
+        {}
         <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[760px]">
@@ -195,7 +195,7 @@ export default function OCRPage() {
             </table>
           </div>
 
-          {/* Table Footer */}
+          {}
           <div className="px-3.5 py-2 flex items-center justify-between border-t border-[#e2e8f0] bg-[#f8fafc]">
             <span className="text-[11px] text-[#64748b]">
               Showing {filtered.length} of {ocrResults.length} entries

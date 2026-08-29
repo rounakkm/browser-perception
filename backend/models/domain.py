@@ -8,7 +8,7 @@ class DOMElement(BaseModel):
     label: Optional[str] = None
     value: Optional[str] = None
     text: Optional[str] = None
-    bbox: Optional[List[int]] = None # [x, y, width, height]
+    bbox: Optional[List[int]] = None
     attributes: Dict[str, str] = Field(default_factory=dict)
     is_interactive: bool = False
 
@@ -57,13 +57,12 @@ class AgentContext(BaseModel):
     page_revision: Optional[int] = None
 
 class AgentAction(BaseModel):
-    action: str # "click", "fill", "scroll", "navigate", "submit"
+    action: str
     element_id: Optional[str] = None
-    # Plain values are only valid for non-sensitive fields.  value_token is the
-    # only agent-visible reference to a sensitive value.
+
     value: Optional[str] = None
     value_token: Optional[str] = None
-    url: Optional[str] = None # For navigation
+    url: Optional[str] = None
     session_id: Optional[str] = None
     page_revision: Optional[int] = None
 
@@ -73,7 +72,6 @@ class ActionResult(BaseModel):
     new_state: Optional[SanitizedPageState] = None
 
 class BrowserPerceptionRequest(BaseModel):
-    """Raw browser data accepted only from the local extension boundary."""
     session_id: str
     page: PageState
 
@@ -84,13 +82,11 @@ class BrowserActionResult(BaseModel):
     error: Optional[str] = None
 
 class ExtensionAction(BaseModel):
-    """Action sent from the trusted backend to the extension, never the agent."""
     action_id: str
     action: str
     element_id: Optional[str] = None
     value: Optional[str] = None
     url: Optional[str] = None
-
 
 class ProcessingMetrics(BaseModel):
     capture_ms: float = 0

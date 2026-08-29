@@ -1,4 +1,3 @@
-"""LLM-powered browser agent executing structured actions on sanitized page states."""
 import json
 import logging
 import re
@@ -41,7 +40,6 @@ AVAILABLE STRUCTURED ACTIONS:
 OUTPUT REQUIREMENT:
 Respond ONLY with a single JSON object. Do not include explanatory text or markdown code fences outside JSON.
 """
-
 
 class LLMBrowserAgent(BrowserAgent):
     def __init__(self, task: str = "Complete the browser task", provider: Optional[BaseLLMProvider] = None):

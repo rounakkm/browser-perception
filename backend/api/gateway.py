@@ -28,7 +28,6 @@ import traceback
 import os
 from typing import Dict, Any
 
-# Initialize logging
 logger = get_logger(__name__)
 
 app = FastAPI(
@@ -45,7 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global state
 browser: BrowserConnector = None
 capture_service: CaptureService = None
 sanitizer: SanitizationEngine = SanitizationEngine()
@@ -57,9 +55,7 @@ startup_time: float = None
 browser_lock: asyncio.Lock = asyncio.Lock()
 extension_bridge: ExtensionBridge = ExtensionBridge()
 
-
 async def _do_capture():
-    """Shared helper: capture current browser state and update global dashboard state."""
     global current_sanitized_state, latest_dashboard_state
     raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
     t0 = time.time()
@@ -81,7 +77,6 @@ async def _do_capture():
         timestamp=raw_state.timestamp
     )
     return raw_state, sanitized_state
-
 
 @app.on_event("startup")
 async def startup_event():
@@ -105,7 +100,7 @@ async def startup_event():
         await browser.start()
         if browser._is_started:
             logger.info("Browser instance initialized successfully")
-            # Auto-capture on startup so dashboard has live data immediately
+
             try:
                 await browser.navigate("https://www.google.com")
                 await asyncio.sleep(2.0)
@@ -118,7 +113,6 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Startup error (non-fatal): {e}\n{traceback.format_exc()}")
 
-
 @app.on_event("shutdown")
 async def shutdown_event():
     global browser
@@ -127,10 +121,8 @@ async def shutdown_event():
         await browser.stop()
     logger.info("Shutdown complete")
 
-
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
-    """Health check endpoint."""
     uptime = time.time() - startup_time if startup_time else 0
     browser_status = "healthy" if browser and browser._page else "not_initialized"
 
@@ -141,10 +133,8 @@ async def health_check() -> Dict[str, Any]:
         "version": "1.0.0"
     }
 
-
 @app.get("/config")
 async def get_config() -> Dict[str, Any]:
-    """Get current configuration (safe values only)."""
     return {
         "device": settings.get_device(),
         "ocr_enabled": settings.OCR_ENABLED,
@@ -154,12 +144,8 @@ async def get_config() -> Dict[str, Any]:
         "browser_headless": settings.BROWSER_HEADLESS,
     }
 
-
 @app.post("/agent/context", response_model=AgentContext)
 async def get_context(task: str, session_id: str | None = None):
-    """
-    Captures the current browser state, sanitizes it, and returns the context to the agent.
-    """
     global current_sanitized_state, latest_dashboard_state
 
     try:
@@ -172,7 +158,7 @@ async def get_context(task: str, session_id: str | None = None):
             raise HTTPException(status_code=404, detail="No sanitized state for requested browser session")
 
         if sanitized_state is None:
-            # Fall back to Playwright capture
+
             async with browser_lock:
                 raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
                 logger.debug(f"Captured {len(raw_state.dom_elements)} DOM elements")
@@ -182,7 +168,6 @@ async def get_context(task: str, session_id: str | None = None):
                 metrics['sanitization_ms'] = (time.time() - t0) * 1000
                 metrics['total_ms'] = sum(metrics.values())
 
-                # Update dashboard state so the UI shows live data
                 screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
                 latest_dashboard_state = DashboardState(
                     url=raw_state.url,
@@ -210,13 +195,8 @@ async def get_context(task: str, session_id: str | None = None):
         logger.error(f"Failed to capture context: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to capture context: {str(e)}")
 
-
 @app.post("/agent/action", response_model=ActionResult)
 async def perform_action(action: AgentAction):
-    """
-    Receives an action from the agent, validates it against the current sanitized state,
-    and executes it locally or queues it for the Chrome extension.
-    """
     global current_sanitized_state
 
     logger.info(f"Received action: {action.action} on element: {action.element_id}")
@@ -238,13 +218,13 @@ async def perform_action(action: AgentAction):
                 return ActionResult(success=False, error="Extension agents may not navigate to a new origin; activate that origin explicitly.")
             if action.action not in {"click", "fill", "submit"}:
                 return ActionResult(success=False, error="Action is not supported by the extension execution policy.")
-            
+
             resolved_value = action.value
             if action.value_token and action.value_token.startswith("["):
                 resolved_value = value_store.get_value(action.value_token, session_id)
                 if resolved_value is None:
                     raise ValueError("Invalid or expired sensitive value token.")
-            
+
             try:
                 action_validator.validate(action, session.state, scope_id=session_id)
             except ValueError as validation_error:
@@ -271,14 +251,14 @@ async def perform_action(action: AgentAction):
             await asyncio.sleep(1.0)
 
             raw_state, ocr_findings, vision_boxes, metrics = await capture_service.capture_state()
-            
+
             t0 = time.time()
             sanitized_state = sanitizer.sanitize(raw_state)
             metrics['sanitization_ms'] = (time.time() - t0) * 1000
             metrics['total_ms'] = sum(metrics.values())
-            
+
             current_sanitized_state = sanitized_state
-            
+
             global latest_dashboard_state
             screenshot_url = f"/screenshots/{os.path.basename(raw_state.screenshot_path)}" if raw_state.screenshot_path else None
             latest_dashboard_state = DashboardState(
@@ -308,10 +288,8 @@ async def perform_action(action: AgentAction):
         logger.error(f"Internal execution error: {e}\n{traceback.format_exc()}")
         return ActionResult(success=False, error=f"Internal execution error: {str(e)}")
 
-
 @app.post("/browser/perception", response_model=SanitizedPageState)
 async def receive_browser_perception(request: BrowserPerceptionRequest):
-    """Trusted extension ingress. Raw DOM is sanitized before it can be read by an agent."""
     global current_sanitized_state
     try:
         allowed, reason = origin_decision(request.page.url)
@@ -327,15 +305,12 @@ async def receive_browser_perception(request: BrowserPerceptionRequest):
         logger.error("Failed to sanitize extension page state: %s", e)
         raise HTTPException(status_code=400, detail="Invalid browser perception payload")
 
-
 @app.get("/browser/state/{session_id}", response_model=SanitizedPageState)
 async def browser_sanitized_state(session_id: str):
-    """Safe inspection endpoint; it deliberately has no raw-DOM counterpart."""
     state = extension_bridge.get_state(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="No sanitized state for session")
     return state
-
 
 @app.get("/browser/actions/next")
 async def next_browser_action(session_id: str):
@@ -344,7 +319,6 @@ async def next_browser_action(session_id: str):
         return Response(status_code=204)
     return action
 
-
 @app.post("/browser/actions/result")
 async def browser_action_result(result: BrowserActionResult):
     extension_bridge.record_result(result.action_id, result.success)
@@ -352,12 +326,10 @@ async def browser_action_result(result: BrowserActionResult):
         logger.warning("Chrome extension reported action failure: %s", result.error or "unspecified")
     return {"ok": True}
 
-
 @app.get("/dashboard/state", response_model=DashboardState)
 async def get_dashboard_state():
-    """Endpoint for the UI to retrieve the latest full perception state."""
     if not latest_dashboard_state:
-        # Return a default empty state so the dashboard shows ONLINE instead of erroring
+
         return DashboardState(
             url="",
             title="Waiting for first capture...",
@@ -372,14 +344,12 @@ async def get_dashboard_state():
         )
     return latest_dashboard_state
 
-
 @app.get("/dashboard/logs")
 async def get_dashboard_logs(limit: int = 500):
-    """Endpoint for the UI to stream terminal logs."""
     log_file = "logs/perception.log"
     if not os.path.exists(log_file):
         return {"logs": []}
-        
+
     try:
         with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -388,11 +358,9 @@ async def get_dashboard_logs(limit: int = 500):
         logger.error(f"Error reading logs: {e}")
         return {"logs": [f"Error reading logs: {str(e)}"]}
 
-
 @app.delete("/dashboard/logs")
 @app.post("/dashboard/logs/clear")
 async def clear_dashboard_logs():
-    """Clear backend perception log file."""
     log_file = "logs/perception.log"
     try:
         if os.path.exists(log_file):
@@ -403,19 +371,17 @@ async def clear_dashboard_logs():
         logger.error(f"Error clearing logs: {e}")
         return {"ok": False, "error": str(e)}
 
-
 @app.post("/dashboard/reset")
 async def reset_dashboard_session():
-    """Reset session: clear logs, state, and screenshot cache."""
     global latest_dashboard_state
     latest_dashboard_state = None
     try:
-        # Clear log file
+
         log_file = "logs/perception.log"
         if os.path.exists(log_file):
             with open(log_file, "w", encoding="utf-8") as f:
                 f.write("")
-        # Remove cached screenshots
+
         import glob
         for f in glob.glob("screenshots/*.png"):
             try:
@@ -427,12 +393,8 @@ async def reset_dashboard_session():
         logger.error(f"Error resetting session: {e}")
         return {"ok": False, "error": str(e)}
 
-
 @app.post("/capture")
 async def trigger_capture(url: str | None = None):
-    """
-    Dashboard button: optionally navigate to a URL, take a screenshot, update dashboard state.
-    """
     if not browser or not browser._is_started:
         raise HTTPException(status_code=503, detail="Browser not available. Restart the server.")
     try:
@@ -440,12 +402,11 @@ async def trigger_capture(url: str | None = None):
             if url:
                 await browser.navigate(url)
                 logger.info(f"Navigated to: {url}")
-                await asyncio.sleep(1.5)  # Let page settle/render
+                await asyncio.sleep(1.5)
             raw_state, sanitized_state = await _do_capture()
             logger.info(f"Capture complete — URL: {raw_state.url}, elements: {len(raw_state.dom_elements)}")
             return {"ok": True, "url": raw_state.url, "elements": len(raw_state.dom_elements)}
     except Exception as e:
         logger.error(f"Capture failed: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
-
 

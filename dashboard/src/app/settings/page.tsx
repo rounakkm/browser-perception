@@ -54,9 +54,9 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left Column */}
+          {}
           <div className="col-span-12 lg:col-span-8 space-y-4">
-            {/* Section 1: Backend Connection */}
+            {}
             <section className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-4 shadow-2xs">
               <div className="border-b border-[#f1f5f9] pb-2.5 mb-3 flex items-center gap-2">
                 <Power size={16} className="text-[#2563eb]" />
@@ -118,7 +118,7 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            {/* Section 2: Dashboard Preferences */}
+            {}
             <section className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-4 shadow-2xs">
               <div className="border-b border-[#f1f5f9] pb-2.5 mb-3 flex items-center gap-2">
                 <Sliders size={16} className="text-[#2563eb]" />
@@ -210,7 +210,7 @@ export default function SettingsPage() {
             </section>
           </div>
 
-          {/* Right Column: Engine Info */}
+          {}
           <div className="col-span-12 lg:col-span-4">
             <section className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-4 shadow-2xs">
               <div className="border-b border-[#f1f5f9] pb-2.5 mb-3 flex items-center gap-2">

@@ -1,18 +1,7 @@
-"""
-Windows-compatible demo runner.
-Starts the test webapp (port 8080) + runs the profile scenario
-against an already-running gateway (port 8000).
-
-Usage:
-  Terminal 1: D:\Anaconda\envs\Adarsh\python.exe run_server.py
-  Terminal 2: D:\Anaconda\envs\Adarsh\python.exe run_demo_win.py
-  Terminal 3: cd dashboard && npm run dev
-"""
 
 import sys
 import asyncio
 
-# Must be first — before any asyncio use
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
@@ -32,11 +21,8 @@ WEBAPP_PORT = 8080
 GATEWAY_PORT = 8000
 logger = get_logger("demo_runner")
 
-
 def _run_webapp_thread():
-    """Run the test web app in a background thread (same process, different port)."""
     uvicorn.run(webapp, host="127.0.0.1", port=WEBAPP_PORT, log_level="warning")
-
 
 async def wait_for_server(url: str, timeout: int = 30) -> bool:
     deadline = time.time() + timeout
@@ -51,10 +37,9 @@ async def wait_for_server(url: str, timeout: int = 30) -> bool:
             await asyncio.sleep(0.5)
     return False
 
-
 async def main():
     import glob
-    # Clean previous screenshots and reset perception log for clean session
+
     for img in glob.glob("screenshots/*.png"):
         try:
             os.remove(img)
@@ -69,7 +54,6 @@ async def main():
 
     setup_logging()
 
-    # Check gateway is running first
     logger.info("Checking gateway is running at port 8000...")
     gw_ready = await wait_for_server(f"http://127.0.0.1:{GATEWAY_PORT}/health", timeout=10)
     if not gw_ready:
@@ -82,7 +66,6 @@ async def main():
 
     logger.info("[OK] Gateway running at http://127.0.0.1:8000")
 
-    # Start test webapp in background thread
     logger.info("Starting test web app at port 8080...")
     t = threading.Thread(target=_run_webapp_thread, daemon=True)
     t.start()
@@ -114,7 +97,6 @@ async def main():
     except Exception as e:
         import traceback
         logger.error(f"Demo error: {e}\n{traceback.format_exc()}")
-
 
 if __name__ == "__main__":
     if sys.platform == 'win32':

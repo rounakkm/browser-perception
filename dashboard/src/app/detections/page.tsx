@@ -19,7 +19,6 @@ export default function DetectionsPage() {
     { refreshInterval: 2000 }
   );
 
-  // Combine detections from vision_results and sanitized_elements
   const detections = [
     ...(data?.vision_results || []).map((v, i) => ({
       id: `det_v${i + 1}`,
@@ -82,7 +81,7 @@ export default function DetectionsPage() {
       <TopAppBar searchPlaceholder="Filter detections..." />
 
       <main className="flex-1 p-5 md:p-6 max-w-7xl w-full mx-auto space-y-4">
-        {/* Header & Controls Area */}
+        {}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#e2e8f0]">
           <div>
             <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">
@@ -93,9 +92,9 @@ export default function DetectionsPage() {
             </p>
           </div>
 
-          {/* Table Controls */}
+          {}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Filter Search */}
+            {}
             <div className="relative w-48 sm:w-56">
               <Filter size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
               <input
@@ -107,7 +106,7 @@ export default function DetectionsPage() {
               />
             </div>
 
-            {/* Type Dropdown */}
+            {}
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
@@ -120,7 +119,7 @@ export default function DetectionsPage() {
               <option value="ELEMENT">Element</option>
             </select>
 
-            {/* Sort Dropdown */}
+            {}
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as "conf_desc" | "conf_asc")}
@@ -130,7 +129,7 @@ export default function DetectionsPage() {
               <option value="conf_asc">Confidence (Low → High)</option>
             </select>
 
-            {/* Action Button */}
+            {}
             <button
               onClick={exportCSV}
               className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded text-[12px] font-medium h-7.5 px-3 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
@@ -141,7 +140,7 @@ export default function DetectionsPage() {
           </div>
         </div>
 
-        {/* Data Table */}
+        {}
         <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md w-full overflow-x-auto shadow-2xs">
           <table className="w-full text-left border-collapse min-w-[760px]">
             <thead>
@@ -239,7 +238,7 @@ export default function DetectionsPage() {
             </tbody>
           </table>
 
-          {/* Table Footer */}
+          {}
           <div className="border-t border-[#e2e8f0] bg-[#f8fafc] px-3.5 py-2 flex items-center justify-between text-[#64748b] text-[11px]">
             <div>
               Showing <span className="font-bold text-[#0f172a]">{filtered.length}</span> detections

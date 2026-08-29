@@ -34,7 +34,7 @@ class ActionExecutor:
             await self.browser.evaluate(f"document.querySelector('{selector}').submit()")
 
         elif action.action == "scroll":
-            direction = getattr(action, "url", "down")  # reuse url field for scroll direction
+            direction = getattr(action, "url", "down")
             await self.browser.evaluate(
                 "window.scrollBy(0, 300)" if direction != "up" else "window.scrollBy(0, -300)"
             )

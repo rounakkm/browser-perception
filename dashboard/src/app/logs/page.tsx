@@ -63,10 +63,10 @@ export default function LogsPage() {
       <TopAppBar title="System Perception & Privacy Logs" />
 
       <main className="flex-1 flex flex-col p-4 md:p-5 gap-3 overflow-hidden">
-        {/* Controls Toolbar */}
+        {}
         <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-2.5 flex flex-wrap items-center justify-between gap-2.5 shadow-2xs shrink-0">
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Search Input */}
+            {}
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
               <input
@@ -80,7 +80,7 @@ export default function LogsPage() {
 
             <div className="h-5 w-px bg-[#e2e8f0]" />
 
-            {/* Level Filter */}
+            {}
             <select
               value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value)}
@@ -92,7 +92,7 @@ export default function LogsPage() {
               <option value="ERROR">ERROR</option>
             </select>
 
-            {/* Component Filter */}
+            {}
             <select
               value={componentFilter}
               onChange={(e) => setComponentFilter(e.target.value)}
@@ -108,7 +108,7 @@ export default function LogsPage() {
             </select>
           </div>
 
-          {/* Action Buttons */}
+          {}
           <div className="flex items-center gap-2">
             <button
               onClick={() => mutate()}
@@ -162,7 +162,7 @@ export default function LogsPage() {
           </div>
         </div>
 
-        {/* Full Terminal Stream Window with Whitespace-Preserved ASCII Table Layout */}
+        {}
         <div className="flex-1 bg-[#ffffff] border border-[#e2e8f0] rounded-md flex flex-col overflow-hidden shadow-2xs">
           <div
             ref={logContainerRef}
@@ -232,7 +232,7 @@ export default function LogsPage() {
             )}
           </div>
 
-          {/* Stream Footer Info */}
+          {}
           <div className="px-3.5 py-1.5 border-t border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-between text-[#64748b] text-[11px]">
             <span>
               Showing <strong className="text-[#0f172a]">{filteredLogs.length}</strong> log entries
@@ -248,7 +248,6 @@ export default function LogsPage() {
 function parseLogLine(line: string, idx: number) {
   const trimmed = line.trim();
 
-  // Format 1: 2026-08-29 17:13:15 - privacy_monitor - INFO - message
   const matchHyphen = trimmed.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+-\s+([\w\.\-]+)\s+-\s+(\w+)\s+-\s+([\s\S]*)$/);
   if (matchHyphen) {
     return {
@@ -261,7 +260,6 @@ function parseLogLine(line: string, idx: number) {
     };
   }
 
-  // Format 2: 17:58:16 [INFO] message
   const matchBracket = trimmed.match(/^(\d{2}:\d{2}:\d{2})\s+\[(\w+)\]\s*([\s\S]*)$/);
   if (matchBracket) {
     const timestamp = matchBracket[1];
@@ -306,7 +304,6 @@ function parseLogLine(line: string, idx: number) {
     };
   }
 
-  // Fallback for raw lines
   const isError = line.includes("ERROR") || line.includes("Traceback") || line.includes("exception");
   const isWarn = line.includes("WARNING") || line.includes("WARN");
   let component = "gateway";

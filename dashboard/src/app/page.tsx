@@ -41,7 +41,7 @@ export default function OverviewPage() {
       <TopAppBar searchPlaceholder="Search commands, detections, or configurations..." />
 
       <main className="flex-1 p-5 md:p-6 max-w-7xl w-full mx-auto space-y-4">
-        {/* Page Header */}
+        {}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-[#e2e8f0]">
           <div>
             <h1 className="text-[18px] font-bold text-[#0f172a] tracking-tight">
@@ -62,7 +62,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        {/* Compact Telemetry Strip */}
+        {}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-3 shadow-2xs">
             <div className="text-[#64748b] text-[10px] font-semibold uppercase tracking-wider mb-0.5">
@@ -114,11 +114,11 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        {/* Bento Grid Layout */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
-          {/* Status Panels (Left 4 cols) */}
+          {}
           <div className="lg:col-span-4 space-y-3">
-            {/* Backend Connection Card */}
+            {}
             <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-3.5 shadow-2xs">
               <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-[#f1f5f9]">
                 <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function OverviewPage() {
                 <div className="flex justify-between items-center text-[#64748b]">
                   <span>Endpoint</span>
                   <span className="font-mono text-[#0f172a] text-[11px] bg-[#f8fafc] px-1.5 py-0.5 rounded border border-[#e2e8f0]">
-                    http://localhost:8000
+                    http:
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[#64748b]">
@@ -165,7 +165,7 @@ export default function OverviewPage() {
               </button>
             </div>
 
-            {/* Perception Engine Info */}
+            {}
             <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-3.5 shadow-2xs">
               <div className="flex items-center gap-2 pb-2 mb-2.5 border-b border-[#f1f5f9]">
                 <Cpu size={15} className="text-[#2563eb]" />
@@ -196,7 +196,7 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          {/* Quick Access Grid (Right 8 cols) */}
+          {}
           <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start">
             <Link
               href="/live"

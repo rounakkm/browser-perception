@@ -26,7 +26,6 @@ def run_gateway():
     uvicorn.run(gateway_app, host="127.0.0.1", port=GATEWAY_PORT, log_level="warning")
 
 async def wait_for_server(url: str, timeout: int = 30):
-    """Poll a server until it responds or timeout."""
     deadline = time.time() + timeout
     async with httpx.AsyncClient(timeout=2.0) as client:
         while time.time() < deadline:
@@ -42,23 +41,20 @@ async def wait_for_server(url: str, timeout: int = 30):
 async def main():
     if os.path.exists("logs/perception.log"):
         open("logs/perception.log", "w").close()
-    
+
     setup_logging()
     logger.info("=================================================================")
     logger.info(" STARTING REAL-BROWSER PRIVACY PERCEPTION DEMONSTRATION")
     logger.info("=================================================================")
 
-    # Start webapp server
     webapp_proc = multiprocessing.Process(target=run_webapp, daemon=True)
     webapp_proc.start()
 
-    # Start gateway server
     gateway_proc = multiprocessing.Process(target=run_gateway, daemon=True)
     gateway_proc.start()
 
     logger.info("Waiting for servers to start...")
 
-    # Wait for both servers to be ready
     webapp_ready = await wait_for_server(f"http://127.0.0.1:{WEBAPP_PORT}/", timeout=30)
     gateway_ready = await wait_for_server(f"http://127.0.0.1:{GATEWAY_PORT}/health", timeout=40)
 

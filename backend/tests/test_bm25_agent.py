@@ -1,12 +1,7 @@
-"""
-Tests for BM25 element ranker and BM25-powered Mock Agent.
-Validates privacy boundary, score rankings, and element selection.
-"""
 import pytest
 from backend.agent_gateway.bm25_ranker import BM25Ranker
 from backend.agent_gateway.mock_agent import SavedProfileMockAgent, BM25MockAgent
 from backend.models.domain import SanitizedElement, SanitizedPageState
-
 
 @pytest.fixture
 def sample_sanitized_elements():
@@ -61,9 +56,7 @@ def sample_sanitized_elements():
         )
     ]
 
-
 class TestBM25Ranker:
-    """Unit tests for Okapi BM25 element ranker."""
 
     def test_email_intent_selects_email_field(self, sample_sanitized_elements):
         ranker = BM25Ranker()
@@ -128,9 +121,7 @@ class TestBM25Ranker:
 
         assert raw_pii_value not in corpus_str
 
-
 class TestBM25MockAgent:
-    """Integration tests for Mock Agent powered by BM25."""
 
     def test_agent_sequence_execution(self, sample_sanitized_elements):
         agent = SavedProfileMockAgent()

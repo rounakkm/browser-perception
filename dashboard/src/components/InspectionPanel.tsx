@@ -19,7 +19,6 @@ export default function InspectionPanel({
   const visionCount = state.vision_results?.length || 0;
   const domCount = state.sanitized_elements?.length || state.raw_elements?.length || 0;
 
-  // Calculate average confidence
   const confidences = [
     ...(state.vision_results || []).map((v) => v.confidence || 0.9),
     ...(state.ocr_results || []).map((o) => o.confidence || 0.9),
@@ -30,7 +29,7 @@ export default function InspectionPanel({
 
   return (
     <div className="w-72 h-full bg-[#ffffff] border-l border-[#e2e8f0] flex flex-col overflow-y-auto no-scrollbar shrink-0 select-none">
-      {/* Panel Header */}
+      {}
       <div className="px-3.5 py-2.5 border-b border-[#e2e8f0] flex items-center justify-between bg-[#f8fafc]">
         <h2 className="text-[13px] font-bold text-[#0f172a] flex items-center gap-1.5">
           <Activity size={15} className="text-[#2563eb]" />
@@ -39,7 +38,7 @@ export default function InspectionPanel({
       </div>
 
       <div className="p-3.5 flex-1 flex flex-col gap-4">
-        {/* Detection Summary */}
+        {}
         <div>
           <h3 className="text-[#64748b] uppercase text-[10px] font-bold tracking-wider mb-1.5">
             Detection Summary
@@ -72,7 +71,7 @@ export default function InspectionPanel({
           </div>
         </div>
 
-        {/* Selected Node */}
+        {}
         <div>
           <h3 className="text-[#64748b] uppercase text-[10px] font-bold tracking-wider mb-1.5">
             Selected Node
@@ -135,7 +134,7 @@ export default function InspectionPanel({
           )}
         </div>
 
-        {/* Overlay Filter Pills */}
+        {}
         <div className="mt-auto pt-2 border-t border-[#e2e8f0]">
           <h3 className="text-[#64748b] uppercase text-[10px] font-bold tracking-wider mb-1.5">
             Overlay Filters

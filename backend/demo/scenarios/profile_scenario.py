@@ -33,9 +33,8 @@ async def execute_profile_scenario(api_url: str, base_web_url: str):
 
         logger.info("[Agent Action]: Click Sign In button")
         await client.post(f"{api_url}/agent/action", json={"action": "click", "element_id": "login_btn"})
-        await asyncio.sleep(2.0)  # Wait for navigation
+        await asyncio.sleep(2.0)
 
-        # Navigate explicitly to profile after login
         profile_url = f"{base_web_url}/profile"
         logger.info(f"\n[2] Agent Action: Navigate to Profile Page ({profile_url})")
         await client.post(f"{api_url}/agent/action", json={"action": "navigate", "url": profile_url})
@@ -68,7 +67,6 @@ async def execute_profile_scenario(api_url: str, base_web_url: str):
                 actions_count += 1
             await asyncio.sleep(0.3)
 
-        # Find and click save button (try multiple possible IDs)
         save_btn = next(
             (e for e in context['page']['elements']
              if e.get('element_id') in ('save_btn', 'save-btn', 'submit_btn') or

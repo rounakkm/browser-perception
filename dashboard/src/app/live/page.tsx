@@ -27,7 +27,6 @@ export default function LivePerceptionPage() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
 
-  // Live Perception State
   const { data, error, mutate } = useSWR<DashboardState>(
     "http://localhost:8000/dashboard/state",
     fetcher,
@@ -71,7 +70,7 @@ export default function LivePerceptionPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#f8fafc] overflow-hidden select-none">
-      {/* Top Header Controls */}
+      {}
       <header className="h-13 bg-[#ffffff] border-b border-[#e2e8f0] flex items-center justify-between px-5 shrink-0 z-10 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-3">
           <div className="relative w-64 md:w-80">
@@ -84,7 +83,7 @@ export default function LivePerceptionPage() {
           </div>
         </div>
 
-        {/* View Actions */}
+        {}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setIsPaused(!isPaused)}
@@ -110,7 +109,7 @@ export default function LivePerceptionPage() {
           </button>
         </div>
 
-        {/* Trailing Profile / Notification */}
+        {}
         <div className="flex items-center gap-1.5">
           <button className="p-1.5 text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9] rounded-md transition-colors cursor-pointer">
             <Bell size={15} />
@@ -122,7 +121,7 @@ export default function LivePerceptionPage() {
         </div>
       </header>
 
-      {/* URL Navigation Sub-bar */}
+      {}
       <div className="flex items-center gap-2 px-4 py-1.5 bg-[#ffffff] border-b border-[#e2e8f0] shrink-0">
         <Globe size={14} className="text-[#64748b]" />
         <input
@@ -148,11 +147,11 @@ export default function LivePerceptionPage() {
         </div>
       )}
 
-      {/* Main Workspace (Center Viewport + Right Inspection Panel) */}
+      {}
       <div className="flex-1 flex overflow-hidden">
-        {/* Center: Telemetry + Viewport */}
+        {}
         <div className="flex-1 flex flex-col h-full p-3.5 overflow-hidden">
-          {/* Telemetry Bar */}
+          {}
           <div className="flex items-center gap-4 mb-2 px-3 py-1 bg-[#ffffff] border border-[#e2e8f0] rounded-md text-[11.5px] text-[#64748b] shrink-0 shadow-2xs">
             <div className="flex items-center gap-1.5">
               <span
@@ -193,7 +192,7 @@ export default function LivePerceptionPage() {
             </div>
           </div>
 
-          {/* Browser Viewport View */}
+          {}
           <div className="flex-1 overflow-hidden">
             <ScreenshotViewer
               state={data || ({} as DashboardState)}
@@ -203,7 +202,7 @@ export default function LivePerceptionPage() {
           </div>
         </div>
 
-        {/* Right: Inspection Panel */}
+        {}
         <InspectionPanel
           state={data || ({} as DashboardState)}
           selectedElement={selectedElement}
@@ -211,7 +210,7 @@ export default function LivePerceptionPage() {
         />
       </div>
 
-      {/* Dynamic, Resizable Developer Live Log Terminal */}
+      {}
       <ResizableLiveTerminal initialHeight={200} />
     </div>
   );

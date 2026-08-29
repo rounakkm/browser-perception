@@ -34,7 +34,7 @@ export default function PipelinePage() {
       <TopAppBar searchPlaceholder="Search pipeline nodes, metrics..." />
 
       <main className="flex-1 p-5 md:p-6 max-w-7xl w-full mx-auto space-y-4">
-        {/* Summary Header */}
+        {}
         <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
           <div>
             <h3 className="text-[16px] font-bold text-[#0f172a]">
@@ -65,9 +65,9 @@ export default function PipelinePage() {
           </div>
         </div>
 
-        {/* Pipeline Diagram container */}
+        {}
         <div className="bg-[#ffffff] border border-[#e2e8f0] rounded-md p-6 relative min-h-[500px] overflow-x-auto shadow-2xs">
-          {/* SVG Connections (Behind nodes) */}
+          {}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
             style={{ zIndex: 0 }}
@@ -85,7 +85,7 @@ export default function PipelinePage() {
                 <path d="M 0 0 L 10 5 L 0 10 z" fill="#cbd5e1" />
               </marker>
             </defs>
-            {/* Stream to Capture */}
+            {}
             <path
               d="M 150 70 L 210 70"
               fill="none"
@@ -93,7 +93,7 @@ export default function PipelinePage() {
               stroke="#cbd5e1"
               strokeWidth="2"
             />
-            {/* Capture to Preprocess */}
+            {}
             <path
               d="M 410 70 L 470 70"
               fill="none"
@@ -101,7 +101,7 @@ export default function PipelinePage() {
               stroke="#cbd5e1"
               strokeWidth="2"
             />
-            {/* Preprocess Split to YOLO, OCR, DOM */}
+            {}
             <path
               d="M 670 70 L 710 70 L 710 140 L 750 140"
               fill="none"
@@ -123,7 +123,7 @@ export default function PipelinePage() {
               stroke="#cbd5e1"
               strokeWidth="2"
             />
-            {/* YOLO, OCR, DOM merge to Output */}
+            {}
             <path
               d="M 950 140 L 990 140 L 990 250 L 1030 250"
               fill="none"
@@ -148,7 +148,7 @@ export default function PipelinePage() {
           </svg>
 
           <div className="relative z-10 w-[1220px] h-[440px]">
-            {/* Node 1: Browser Stream */}
+            {}
             <div className="absolute left-[20px] top-[35px] w-[130px] bg-[#f8fafc] border border-[#e2e8f0] rounded-md p-2.5 flex flex-col items-center shadow-2xs">
               <Globe size={18} className="text-[#64748b] mb-1" />
               <span className="text-[11px] text-[#0f172a] font-bold text-center mb-1">
@@ -159,7 +159,7 @@ export default function PipelinePage() {
               </div>
             </div>
 
-            {/* Node 2: Frame Capture */}
+            {}
             <div className="absolute left-[210px] top-[20px] w-[200px] bg-[#ffffff] border border-[#e2e8f0] rounded-md hover:border-[#2563eb] transition-all shadow-2xs">
               <div className="bg-[#f8fafc] px-3 py-1.5 border-b border-[#e2e8f0] rounded-t-md flex justify-between items-center">
                 <span className="text-[12px] font-bold text-[#0f172a]">
@@ -189,7 +189,7 @@ export default function PipelinePage() {
               </div>
             </div>
 
-            {/* Node 3: Preprocessing */}
+            {}
             <div className="absolute left-[470px] top-[20px] w-[200px] bg-[#ffffff] border border-[#e2e8f0] rounded-md hover:border-[#2563eb] transition-all shadow-2xs">
               <div className="bg-[#f8fafc] px-3 py-1.5 border-b border-[#e2e8f0] rounded-t-md flex justify-between items-center">
                 <span className="text-[12px] font-bold text-[#0f172a]">
@@ -219,7 +219,7 @@ export default function PipelinePage() {
               </div>
             </div>
 
-            {/* Node 4: YOLOv8 */}
+            {}
             <div className="absolute left-[750px] top-[95px] w-[200px] bg-[#ffffff] border border-[#e2e8f0] rounded-md hover:border-[#2563eb] transition-all shadow-2xs">
               <div className="bg-[#f8fafc] px-3 py-1.5 border-b border-[#e2e8f0] rounded-t-md flex justify-between items-center">
                 <span className="text-[12px] font-bold text-[#0f172a]">
@@ -251,7 +251,7 @@ export default function PipelinePage() {
               </div>
             </div>
 
-            {/* Node 5: OCR */}
+            {}
             <div className="absolute left-[750px] top-[205px] w-[200px] bg-[#ffffff] border border-[#e2e8f0] rounded-md hover:border-[#2563eb] transition-all shadow-2xs">
               <div className="bg-[#f8fafc] px-3 py-1.5 border-b border-[#e2e8f0] rounded-t-md flex justify-between items-center">
                 <span className="text-[12px] font-bold text-[#0f172a]">
@@ -283,7 +283,7 @@ export default function PipelinePage() {
               </div>
             </div>
 
-            {/* Node 6: DOM Sanitizer */}
+            {}
             <div className="absolute left-[750px] top-[315px] w-[200px] bg-[#ffffff] border border-[#e2e8f0] rounded-md hover:border-[#2563eb] transition-all shadow-2xs">
               <div className="bg-[#f8fafc] px-3 py-1.5 border-b border-[#e2e8f0] rounded-t-md flex justify-between items-center">
                 <span className="text-[12px] font-bold text-[#0f172a]">
@@ -313,7 +313,7 @@ export default function PipelinePage() {
               </div>
             </div>
 
-            {/* Node 7: Output Fusion */}
+            {}
             <div className="absolute left-[1030px] top-[205px] w-[180px] bg-[#ffffff] border-2 border-[#2563eb] rounded-md p-3 shadow-xs">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <GitMerge size={16} className="text-[#2563eb]" />

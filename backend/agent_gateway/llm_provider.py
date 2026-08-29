@@ -1,4 +1,3 @@
-"""LLM Provider abstraction for browser agent execution."""
 from abc import ABC, abstractmethod
 import os
 import json
@@ -8,13 +7,10 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-
 class BaseLLMProvider(ABC):
     @abstractmethod
     def generate(self, prompt: str, system_prompt: str = "") -> str:
-        """Generate raw text response from the LLM provider."""
         pass
-
 
 class OpenAICompatibleProvider(BaseLLMProvider):
     def __init__(
@@ -53,7 +49,6 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             resp.raise_for_status()
             data = resp.json()
             return data["choices"][0]["message"]["content"]
-
 
 class GeminiLLMProvider(BaseLLMProvider):
     def __init__(
@@ -117,7 +112,6 @@ class GeminiLLMProvider(BaseLLMProvider):
                 raise RuntimeError("Gemini response candidate contains no text parts.")
             return parts[0]["text"]
 
-
 class MockLLMProvider(BaseLLMProvider):
     def __init__(self, response_generator: Optional[Callable[[str, str], str]] = None, fixed_response: Optional[str] = None):
         self.response_generator = response_generator
@@ -134,13 +128,11 @@ class MockLLMProvider(BaseLLMProvider):
             return self.fixed_response
         return json.dumps({"action": "done", "reason": "Mock completion"})
 
-
 def get_llm_provider(
     provider_name: Optional[str] = None,
     api_key: Optional[str] = None,
     model: Optional[str] = None,
 ) -> BaseLLMProvider:
-    """Factory to retrieve configured LLM provider."""
     name = (provider_name or os.getenv("LLM_PROVIDER") or "").lower()
     if name == "mock":
         return MockLLMProvider()

@@ -19,10 +19,10 @@ class SanitizationEngine:
 
     def sanitize(self, page_state: PageState, scope_id: str | None = None) -> SanitizedPageState:
         sanitized_elements = []
-        
+
         for elem in page_state.dom_elements:
             finding = self.detector.analyze_element(elem)
-            
+
             sanitized_elem = SanitizedElement(
                 element_id=elem.element_id,
                 type=elem.type,
@@ -32,18 +32,16 @@ class SanitizationEngine:
                 is_interactive=elem.is_interactive,
                 sensitive=False
             )
-            
+
             if finding:
                 sanitized_elem.sensitive = True
-                
-              
+
                 raw_val = elem.value if elem.value else DEFAULT_SAMPLE_SECRETS.get(finding.category, "secret_value")
                 token = value_store.store_value(raw_val, finding.category, scope_id)
                 sanitized_elem.value = token
-                
-                
+
                 if elem.text:
-                   
+
                     sanitized_text = elem.text
                     for category, pattern in self.detector.patterns.items():
                         matches = pattern.findall(sanitized_text)
@@ -54,9 +52,9 @@ class SanitizationEngine:
             else:
                 sanitized_elem.value = elem.value
                 sanitized_elem.text = elem.text
-                
+
             sanitized_elements.append(sanitized_elem)
-            
+
         return SanitizedPageState(
             url=page_state.url,
             title=page_state.title,

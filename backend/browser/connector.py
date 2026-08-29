@@ -1,11 +1,6 @@
 import sys
 import asyncio
 
-# Must be set before ANY asyncio event loop is created.
-# Uvicorn's reloader spawns a fresh subprocess on Windows which defaults to
-# SelectorEventLoop – that loop does NOT support subprocesses (Playwright needs
-# create_subprocess_exec). Forcing ProactorEventLoop here, at module-import
-# time, fixes the issue regardless of how the process was started.
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 from typing import List, Dict, Optional
@@ -17,10 +12,6 @@ from backend.config.logging import get_logger
 logger = get_logger(__name__)
 
 class BrowserConnector:
-    """
-    Browser connector using Playwright Async API.
-    Fully compatible with FastAPI/uvicorn asyncio event loop.
-    """
 
     def __init__(self):
         self._playwright = None
@@ -30,7 +21,6 @@ class BrowserConnector:
         self._is_started = False
 
     async def start(self, headless: Optional[bool] = None):
-        """Initialize the browser using async Playwright."""
         if self._is_started:
             return
         if headless is None:
@@ -50,11 +40,8 @@ class BrowserConnector:
         except Exception as e:
             logger.error(f"Failed to start browser: {e}")
             self._is_started = False
-            # Don't re-raise – let the server start without a browser.
-            # Browser will be lazily re-attempted on first capture request.
 
     async def stop(self):
-        """Stop the browser."""
         try:
             if self._page:
                 await self._page.close()
@@ -71,54 +58,44 @@ class BrowserConnector:
             self._is_started = False
 
     async def get_page(self) -> Page:
-        """Get the current page, starting browser if needed."""
         if not self._page or not self._is_started:
             await self.start()
         return self._page
 
     async def navigate(self, url: str):
-        """Navigate to a URL."""
         page = await self.get_page()
         await page.goto(url, timeout=30000)
 
     async def get_url(self) -> str:
-        """Get current URL."""
         page = await self.get_page()
         return page.url
 
     async def get_title(self) -> str:
-        """Get page title."""
         page = await self.get_page()
         return await page.title()
 
     async def get_viewport(self) -> Dict[str, int]:
-        """Get viewport dimensions."""
         page = await self.get_page()
         size = page.viewport_size
         return size if size else {"width": 1280, "height": 800}
 
     async def screenshot(self, path: str):
-        """Take a screenshot."""
         page = await self.get_page()
         await page.screenshot(path=path)
 
     async def click(self, selector: str, timeout: int = 5000):
-        """Click an element."""
         page = await self.get_page()
         await page.click(selector, timeout=timeout)
 
     async def fill(self, selector: str, value: str, timeout: int = 5000):
-        """Fill an input element."""
         page = await self.get_page()
         await page.fill(selector, value, timeout=timeout)
 
     async def evaluate(self, expression: str):
-        """Evaluate a JS expression."""
         page = await self.get_page()
         return await page.evaluate(expression)
 
     async def extract_dom_elements(self) -> List[DOMElement]:
-        """Extract DOM elements from current page."""
         page = await self.get_page()
 
         script = """

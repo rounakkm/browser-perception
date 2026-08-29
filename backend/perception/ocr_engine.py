@@ -6,10 +6,6 @@ from backend.config.logging import get_logger
 logger = get_logger(__name__)
 
 class OCRPerceptionEngine:
-    """
-    OCR Engine for extracting and analyzing text from DOM elements and optionally from screenshots.
-    Uses pytesseract when available, with NER for entity extraction.
-    """
 
     def __init__(self):
         self.tesseract_available = False
@@ -42,12 +38,11 @@ class OCRPerceptionEngine:
             self.spacy_available = False
 
     def extract_visual_text(self, elements: List[DOMElement], screenshot_path: Optional[str] = None) -> List[VisualElement]:
-        """Extract text from DOM elements with confidence scores."""
         visual_findings = []
 
         for elem in elements:
             if not elem.is_interactive and elem.text:
-                # Check for potentially sensitive keywords in non-interactive elements
+
                 if any(kw in elem.text.lower() for kw in ["account", "email", "phone", "pin", "card", "number", "id"]):
                     visual_findings.append(VisualElement(
                         bbox=elem.bbox or [0, 0, 0, 0],
@@ -58,12 +53,6 @@ class OCRPerceptionEngine:
         return visual_findings
 
     def extract_text_from_screenshot(self, screenshot_path: str) -> Optional[List[Dict[str, Any]]]:
-        """
-        Extract text from screenshot using OCR if available.
-
-        Returns:
-            List of text extractions with bounding boxes, or None if OCR unavailable.
-        """
         if not self.tesseract_available or not screenshot_path:
             return None
 
@@ -72,20 +61,16 @@ class OCRPerceptionEngine:
             import cv2
             import numpy as np
 
-            # Load image
             img = Image.open(screenshot_path)
             img_array = np.array(img)
 
-            # Preprocess for better OCR
             if len(img_array.shape) == 3:
                 gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
             else:
                 gray = img_array
 
-            # Apply thresholding
             _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
 
-            # Run Tesseract with detailed output
             ocr_data = self.pytesseract.image_to_data(thresh, output_type=self.pytesseract.Output.DICT)
 
             results = []
@@ -93,7 +78,7 @@ class OCRPerceptionEngine:
                 text = ocr_data['text'][i].strip()
                 conf = int(ocr_data['conf'][i])
 
-                if text and conf > 30:  # Minimum confidence
+                if text and conf > 30:
                     results.append({
                         'text': text,
                         'confidence': conf / 100.0,
@@ -113,12 +98,6 @@ class OCRPerceptionEngine:
             return None
 
     def detect_pii_entities(self, text: str) -> Optional[List[Dict[str, Any]]]:
-        """
-        Detect PII entities in text using NER if available.
-
-        Returns:
-            List of detected entities with types and confidence.
-        """
         if not self.spacy_available or not text:
             return None
 
@@ -132,10 +111,9 @@ class OCRPerceptionEngine:
                     'type': ent.label_,
                     'start': ent.start_char,
                     'end': ent.end_char,
-                    'confidence': 0.95  # SpaCy doesn't provide confidence directly
+                    'confidence': 0.95
                 }
 
-                # Map common NER labels to PII categories
                 label_mapping = {
                     'PERSON': 'PERSON_NAME',
                     'ORG': 'ORGANIZATION',
@@ -161,12 +139,6 @@ class OCRPerceptionEngine:
             return None
 
     def correlate_with_dom(self, ocr_results: Optional[List[Dict]], dom_elements: List[DOMElement]) -> List[DOMElement]:
-        """
-        Correlate OCR results with DOM elements based on spatial overlap.
-
-        Returns:
-            Enhanced DOM elements with OCR and NER information.
-        """
         if not ocr_results:
             return dom_elements
 
@@ -175,7 +147,6 @@ class OCRPerceptionEngine:
         for elem in dom_elements:
             enhanced_elem = elem.copy(deep=True)
 
-            # Check for spatial overlap with OCR regions
             if elem.bbox:
                 elem_box = set(range(elem.bbox[0], elem.bbox[0] + elem.bbox[2])) | \
                           set(range(elem.bbox[1], elem.bbox[1] + elem.bbox[3]))
@@ -185,7 +156,6 @@ class OCRPerceptionEngine:
                     ocr_region = set(range(ocr_box[0], ocr_box[0] + ocr_box[2])) | \
                                 set(range(ocr_box[1], ocr_box[1] + ocr_box[3]))
 
-                    # Simple overlap check
                     if elem_box & ocr_region:
                         if not enhanced_elem.text or len(ocr_result['text']) > len(enhanced_elem.text):
                             enhanced_elem.text = ocr_result['text']
@@ -195,12 +165,6 @@ class OCRPerceptionEngine:
         return enhanced_elements
 
     def analyze_text_content(self, text: str) -> Dict[str, Any]:
-        """
-        Comprehensive text analysis combining NER and keyword detection.
-
-        Returns:
-            Analysis results with detected entities and keywords.
-        """
         analysis = {
             'text': text,
             'entities': self.detect_pii_entities(text) or [],
@@ -208,7 +172,6 @@ class OCRPerceptionEngine:
             'has_potential_pii': False
         }
 
-        # Keyword-based detection
         sensitive_keywords = [
             'password', 'secret', 'pin', 'cvv', 'account', 'card',
             'aadhaar', 'pan', 'ssn', 'email', 'phone', 'address'
@@ -219,7 +182,6 @@ class OCRPerceptionEngine:
                 analysis['keywords'].append(keyword)
                 analysis['has_potential_pii'] = True
 
-        # Check for PII patterns
         pii_patterns = {
             'email': r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
             'phone': r'\+?\d{1,4}[-.\s]?\(?\d{1,3}\)?[-.\s]?\d{3,4}[-.\s]?\d{4}',

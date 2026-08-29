@@ -28,7 +28,7 @@ export default function ScreenshotViewer({
 
   return (
     <div className="flex flex-col h-full bg-[#ffffff] border border-[#c3c6d7] relative overflow-hidden select-none">
-      {/* Zoom / View Controls Overlay */}
+      {}
       <div className="absolute top-2 right-2 z-20 flex items-center bg-[#ffffff]/90 border border-[#c3c6d7] p-1 gap-1 shadow-sm">
         <button
           onClick={zoomOut}
@@ -53,7 +53,7 @@ export default function ScreenshotViewer({
         </button>
       </div>
 
-      {/* Main Viewport Container */}
+      {}
       <div className="flex-1 overflow-auto p-2 flex items-center justify-center relative bg-[#f8f9fa]">
         {!imgUrl ? (
           <div className="flex flex-col items-center justify-center text-[#505f76] space-y-2 p-8 text-center">
@@ -75,8 +75,8 @@ export default function ScreenshotViewer({
               maxHeight: scale === 1 ? "100%" : "none",
             }}
           >
-            {/* Base Screenshot Image */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {}
+            {}
             <img
               src={imgUrl}
               alt="Browser Perception Capture"
@@ -87,7 +87,7 @@ export default function ScreenshotViewer({
               }}
             />
 
-            {/* Overlays: YOLO Vision & Element Detections */}
+            {}
             {imgSize.w > 0 &&
               state.vision_results?.map((box, idx) => {
                 if (!box.bbox || box.bbox.length !== 4) return null;

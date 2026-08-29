@@ -1,31 +1,63 @@
-
 venv/
 .venv/
 env/
 ENV/
+*.venv
 
 
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
 htmlcov/
-.pytest_cache
+
+
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+.vercel/
+.turbo/
+
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+models/*.onnx
+models/*.pt
+models/*.pth
+models/*.bin
+models/*.weights
+models/*.safetensors
+
+
+screenshots/
+logs/
+*.png
+*.jpg
+*.jpeg
+*.log
+*.pdf
 
 
 .env
 .env.*
 !.env.example
+!.env.local.example
 
 
 .DS_Store
+Thumbs.db
 .vscode/
 .idea/
 *.swp
 *.swo
 
-
-screenshots/
-*.png
-*.log

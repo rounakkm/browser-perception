@@ -5,7 +5,7 @@ export interface DOMElement {
   label?: string;
   value?: string;
   text?: string;
-  bbox?: number[]; // [x, y, width, height]
+  bbox?: number[]; 
   attributes: Record<string, string>;
   is_interactive: boolean;
 }
