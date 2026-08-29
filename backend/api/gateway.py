@@ -17,7 +17,12 @@ from backend.config.settings import settings
 from backend.config.logging import setup_logging, get_logger
 from backend.security.origin_policy import origin_decision
 from backend.security.store import value_store
+import sys
 import asyncio
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 import time
 import traceback
 import os
